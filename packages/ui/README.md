@@ -43,4 +43,8 @@ DatePicker поддерживает `required`, `disabledDates` (Matcher react-d
 axe для списка и календаря, фокус и выбор 29 февраля в трёх часовых поясах.
 Снимки сохраняются в `test-results/ui` (не коммитятся).
 
+[Checkbox, Switch, RadioGroup и Segmented](docs/selection-controls.md) также доступны
+из публичного API. Они управляются значением формы, передают name/ref и поддерживают
+клавиатуру, disabled и reduced motion.
+
 Остальные компоненты T-F2-05 и админка остаются отдельными задачами.
