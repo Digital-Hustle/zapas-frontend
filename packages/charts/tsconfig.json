@@ -1,0 +1,4 @@
+{
+  "extends": "@zapas/config/tsconfig.base.json",
+  "include": ["src", "test"]
+}
