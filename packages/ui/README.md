@@ -12,4 +12,30 @@
 DatePicker принимает и возвращает календарную дату `YYYY-MM-DD` без времени
 и преобразований в UTC. Пустое значение — `undefined`.
 
+```tsx
+<Field label="Категория" htmlFor="category" error={error}>
+  <Select id="category" value={category} onValueChange={setCategory}
+    options={[{ value: "rent", label: "Аренда" }]}
+    invalid={Boolean(error)} aria-describedby={error ? "category-error" : undefined} />
+</Field>
+<Field label="Дата платежа" htmlFor="date">
+  <DatePicker id="date" value={date} onValueChange={setDate} />
+</Field>
+```
+
+Оба компонента передают `ref` и `onBlur` триггеру для RHF Controller.
+Select предназначен для небольших справочников (до 100 вариантов), поддерживает
+`loading`, пустой список, отключённые опции, `name` и `required`. Ошибка запроса
+остаётся в Field с `invalid`; повтор запроса реализует форма.
+DatePicker поддерживает `required`, `disabledDates` (Matcher react-day-picker)
+и очистку необязательной даты. Некорректный `value` помечается `aria-invalid`.
+Внешний label обязателен: Field + id либо `aria-label`.
+
+## Проверка в браузере
+
+`pnpm dev:ui` из корня → [локальная витрина](http://localhost:5174).
+Она показывает форму, loading/empty/validation/disabled и переключение темы,
+не обращаясь к API. Клавиатура: Tab, Enter, стрелки, Escape; календарь также
+поддерживает PageUp/PageDown. Витрина использует уже установленный Vite web-пакета.
+
 Остальные компоненты T-F2-05 и админка остаются отдельными задачами.

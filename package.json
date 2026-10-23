@@ -10,6 +10,7 @@
     "setup": "node tools/setup.mjs",
     "dev": "pnpm --filter @zapas/web dev",
     "dev:mock": "pnpm --filter @zapas/web dev:mock",
+    "dev:ui": "pnpm --filter @zapas/web exec vite ../../packages/ui/examples --config vite.config.ts --port 5174",
     "build": "pnpm -r --filter ./apps/** --filter ./packages/** run --if-present build",
     "lint": "pnpm -r --filter ./apps/** --filter ./packages/** run --if-present lint",
     "typecheck": "pnpm -r --filter ./apps/** --filter ./packages/** run --if-present typecheck",
