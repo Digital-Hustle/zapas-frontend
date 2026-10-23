@@ -38,4 +38,9 @@ DatePicker поддерживает `required`, `disabledDates` (Matcher react-d
 не обращаясь к API. Клавиатура: Tab, Enter, стрелки, Escape; календарь также
 поддерживает PageUp/PageDown. Витрина использует уже установленный Vite web-пакета.
 
+При запущенной витрине: `pnpm --filter @zapas/web exec playwright install chromium`,
+затем `pnpm test:ui-browser`. Проверяются 360/768/1440, обе темы/reduced motion,
+axe для списка и календаря, фокус и выбор 29 февраля в трёх часовых поясах.
+Снимки сохраняются в `test-results/ui` (не коммитятся).
+
 Остальные компоненты T-F2-05 и админка остаются отдельными задачами.

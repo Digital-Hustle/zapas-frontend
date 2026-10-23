@@ -1,4 +1,4 @@
-import { forwardRef, type ComponentPropsWithoutRef } from "react";
+import { forwardRef, useLayoutEffect, useState, type ComponentPropsWithoutRef } from "react";
 import { motion, useReducedMotion } from "motion/react";
 import { Select as S } from "radix-ui";
 import { popIn, tween } from "@zapas/tokens/motion";
@@ -43,10 +43,34 @@ export const Select = forwardRef<HTMLButtonElement, SelectProps>(function Select
   ref,
 ) {
   const reduced = useReducedMotion();
+  const [open, setOpen] = useState(false);
+  const [content, setContent] = useState<HTMLDivElement | null>(null);
+  // Снимаем inert до возврата фокуса Radix, сохраняя уже заблокированные области.
+  useLayoutEffect(() => {
+    if (!open || !content?.isConnected) return;
+    const blocked: HTMLElement[] = [];
+    let current: HTMLElement = content;
+    while (current.parentElement) {
+      const parent = current.parentElement;
+      for (const sibling of parent.children) {
+        if (sibling !== current && sibling instanceof HTMLElement && !sibling.inert) {
+          sibling.inert = true;
+          blocked.push(sibling);
+        }
+      }
+      if (parent === content.ownerDocument.body) break;
+      current = parent;
+    }
+    return () => {
+      for (const element of blocked) element.inert = false;
+    };
+  }, [content, open]);
   const empty = options.length === 0;
   const unavailable = disabled || loading || empty;
   return (
     <S.Root
+      open={open}
+      onOpenChange={setOpen}
       value={value ?? ""}
       onValueChange={onValueChange}
       name={name}
@@ -72,6 +96,7 @@ export const Select = forwardRef<HTMLButtonElement, SelectProps>(function Select
       <S.Portal>
         <S.Content position="popper" asChild>
           <motion.div
+            ref={setContent}
             initial="hidden"
             animate="show"
             variants={
