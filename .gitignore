@@ -24,6 +24,7 @@ Thumbs.db
 node_modules/
 .pnpm-store/
 dist/
+!packages/tokens/dist/
 coverage/
 *.tsbuildinfo
 .vite/
