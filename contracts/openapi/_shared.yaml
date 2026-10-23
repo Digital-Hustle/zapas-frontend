@@ -1,0 +1,219 @@
+openapi: 3.1.0
+info:
+  title: Zapas shared components
+  version: 1.0.0
+  description: Общие схемы и ответы. Подключаются через $ref из контрактов сервисов.
+paths: {}
+components:
+  securitySchemes:
+    cookieAuth:
+      type: apiKey
+      in: cookie
+      name: __Host-zapas_at
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+    serviceAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+      description: Сервисный JWT (sub=svc:<name>, aud=<target>), только /internal/**
+  parameters:
+    CompanyId:
+      name: companyId
+      in: path
+      required: true
+      schema: { $ref: '#/components/schemas/Uuid' }
+    Page:
+      name: page
+      in: query
+      schema: { type: integer, minimum: 0, default: 0 }
+    Size:
+      name: size
+      in: query
+      schema: { type: integer, minimum: 1, maximum: 200, default: 50 }
+    Cursor:
+      name: cursor
+      in: query
+      schema: { type: string, maxLength: 200 }
+    Limit:
+      name: limit
+      in: query
+      schema: { type: integer, minimum: 1, maximum: 200, default: 50 }
+    From:
+      name: from
+      in: query
+      schema: { $ref: '#/components/schemas/LocalDate' }
+    To:
+      name: to
+      in: query
+      schema: { $ref: '#/components/schemas/LocalDate' }
+    IdempotencyKey:
+      name: Idempotency-Key
+      in: header
+      schema: { $ref: '#/components/schemas/Uuid' }
+    IfMatch:
+      name: If-Match
+      in: header
+      required: true
+      description: Текущая версия ресурса в кавычках, например "3"
+      schema: { type: string, pattern: '^"\d+"$' }
+    Query:
+      name: q
+      in: query
+      schema: { type: string, maxLength: 100 }
+  headers:
+    RetryAfter:
+      description: Секунды до повтора
+      schema: { type: integer, minimum: 0 }
+  schemas:
+    Uuid:
+      type: string
+      format: uuid
+    LocalDate:
+      type: string
+      format: date
+      examples: ['2026-11-17']
+    Instant:
+      type: string
+      format: date-time
+    Money:
+      type: string
+      description: Сумма в рублях, 2 знака, точка. Арифметика только на сервере.
+      pattern: '^-?\d{1,17}\.\d{2}$'
+      examples: ['125000.00']
+    PositiveMoney:
+      type: string
+      pattern: '^\d{1,17}\.\d{2}$'
+      description: Сумма > 0 (проверяется сервером)
+    Probability:
+      type: number
+      minimum: 0
+      maximum: 1
+    Direction:
+      type: string
+      enum: [IN, OUT]
+    EventSource:
+      type: string
+      enum: [STATEMENT, INVOICE, CONTRACT, TAX, RECURRING, MANUAL, BANK, INTEGRATION, FORECAST, SCENARIO]
+    CompanyRole:
+      type: string
+      enum: [OWNER, ACCOUNTANT, VIEWER]
+    TaxRegime:
+      type: string
+      enum: [USN_INCOME, USN_INCOME_MINUS_EXPENSES, OSNO, AUSN, PSN]
+    RiskLevel:
+      type: string
+      enum: [NONE, LOW, MEDIUM, HIGH]
+    JobStatus:
+      type: string
+      enum: [QUEUED, RUNNING, SUCCEEDED, FAILED]
+    Job:
+      type: object
+      required: [jobId, status, progress, statusUrl]
+      properties:
+        jobId: { $ref: '#/components/schemas/Uuid' }
+        status: { $ref: '#/components/schemas/JobStatus' }
+        progress: { type: integer, minimum: 0, maximum: 100 }
+        statusUrl: { type: string }
+        problem: { $ref: '#/components/schemas/Problem' }
+    PageMeta:
+      type: object
+      required: [page, size, total]
+      properties:
+        page: { type: integer }
+        size: { type: integer }
+        total: { type: integer, format: int64 }
+    Option:
+      type: object
+      required: [id, label]
+      properties:
+        id: { type: string }
+        label: { type: string }
+        hint: { type: string }
+    Options:
+      type: object
+      required: [items]
+      properties:
+        items:
+          type: array
+          items: { $ref: '#/components/schemas/Option' }
+    ErrorCode:
+      type: string
+      enum:
+        - VALIDATION_FAILED
+        - MALFORMED_REQUEST
+        - AUTH_REQUIRED
+        - AUTH_TOKEN_EXPIRED
+        - AUTH_CODE_INVALID
+        - AUTH_CODE_EXPIRED
+        - AUTH_RESEND_TOO_SOON
+        - AUTH_LOCKED
+        - AUTH_REFRESH_INVALID
+        - AUTH_SESSION_REVOKED
+        - FORBIDDEN
+        - NOT_FOUND
+        - CONFLICT
+        - VERSION_MISMATCH
+        - PRECONDITION_REQUIRED
+        - DUPLICATE
+        - PAYLOAD_TOO_LARGE
+        - UNSUPPORTED_MEDIA_TYPE
+        - IMPORT_PARSE_FAILED
+        - IMPORT_EMPTY
+        - INSUFFICIENT_HISTORY
+        - RATE_LIMITED
+        - DEPENDENCY_UNAVAILABLE
+        - INTERNAL
+    FieldError:
+      type: object
+      required: [field, code, message]
+      properties:
+        field: { type: string }
+        code: { type: string }
+        message: { type: string }
+    Problem:
+      type: object
+      required: [type, title, status, code, detail, traceId]
+      properties:
+        type: { type: string, format: uri }
+        title: { type: string }
+        status: { type: integer }
+        code: { $ref: '#/components/schemas/ErrorCode' }
+        detail: { type: string, description: 'Текст для пользователя на русском' }
+        hint: { type: string }
+        instance: { type: string }
+        errors:
+          type: array
+          items: { $ref: '#/components/schemas/FieldError' }
+        traceId: { type: string }
+        retryAfterSec: { type: [integer, 'null'] }
+        attemptsLeft: { type: [integer, 'null'] }
+  responses:
+    BadRequest:
+      description: Некорректный запрос
+      content: { application/problem+json: { schema: { $ref: '#/components/schemas/Problem' } } }
+    Unauthorized:
+      description: Требуется вход
+      content: { application/problem+json: { schema: { $ref: '#/components/schemas/Problem' } } }
+    Forbidden:
+      description: Недостаточно прав
+      content: { application/problem+json: { schema: { $ref: '#/components/schemas/Problem' } } }
+    NotFound:
+      description: Не найдено (в том числе чужая компания)
+      content: { application/problem+json: { schema: { $ref: '#/components/schemas/Problem' } } }
+    Conflict:
+      description: Конфликт версии или дубль
+      content: { application/problem+json: { schema: { $ref: '#/components/schemas/Problem' } } }
+    Unprocessable:
+      description: Ошибка бизнес-валидации
+      content: { application/problem+json: { schema: { $ref: '#/components/schemas/Problem' } } }
+    TooMany:
+      description: Превышен лимит
+      headers:
+        Retry-After: { $ref: '#/components/headers/RetryAfter' }
+      content: { application/problem+json: { schema: { $ref: '#/components/schemas/Problem' } } }
+    Unavailable:
+      description: Зависимость недоступна
+      content: { application/problem+json: { schema: { $ref: '#/components/schemas/Problem' } } }

@@ -1,0 +1,828 @@
+openapi: 3.1.0
+info:
+  title: Zapas auth
+  version: 1.0.0
+  description: Вход по коду из почты, сессии, компании, участники, админ-API пользователей и аудита. Владелец B1.
+servers:
+  - url: /api/v1/auth
+security:
+  - cookieAuth: []
+  - bearerAuth: []
+tags:
+  - name: login
+  - name: sessions
+  - name: me
+  - name: companies
+  - name: admin
+paths:
+  /csrf:
+    get:
+      tags: [login]
+      operationId: bootstrapCsrf
+      summary: CSRF bootstrap для pre-login браузерных мутаций
+      security: []
+      responses:
+        '200':
+          description: 'Выдаёт signed/session-bound token и cookie zapas_csrf; не выдаёт сессию'
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [csrfToken, expiresInSec]
+                properties:
+                  csrfToken: { type: string }
+                  expiresInSec: { type: integer, minimum: 1 }
+  /code:
+    post:
+      tags: [login]
+      operationId: requestLoginCode
+      summary: Отправить код на email (одинаковый ответ для новых и существующих)
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/CodeRq' }
+      responses:
+        '202':
+          description: Код отправлен (или будет отправлен)
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/CodeRs' }
+        '422': { $ref: '_shared.yaml#/components/responses/Unprocessable' }
+        '429': { $ref: '_shared.yaml#/components/responses/TooMany' }
+  /verify:
+    post:
+      tags: [login]
+      operationId: verifyLoginCode
+      summary: Проверить код и открыть сессию
+      description: |
+        WEB/ADMIN — токены в host-only Secure HttpOnly Set-Cookie (__Host-zapas_at, __Host-zapas_rt, Path=/), тело без токенов.
+        ANDROID — токены в теле. Client/X-Client не определяет права; сервер проверяет identity/allowed origin/role и выдаёт отдельный admin audience.
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/VerifyRq' }
+      responses:
+        '200':
+          description: Вход выполнен
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/SessionRs' }
+        '410': { $ref: '_shared.yaml#/components/responses/Unprocessable' }
+        '422': { $ref: '_shared.yaml#/components/responses/Unprocessable' }
+        '429': { $ref: '_shared.yaml#/components/responses/TooMany' }
+  /refresh:
+    post:
+      tags: [sessions]
+      operationId: refreshSession
+      summary: Ротация refresh, новая пара токенов
+      security: []
+      requestBody:
+        description: Только ANDROID; WEB берёт refresh из cookie
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/RefreshRq' }
+      responses:
+        '200':
+          description: Новые токены
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/SessionRs' }
+        '401': { $ref: '_shared.yaml#/components/responses/Unauthorized' }
+        '429': { $ref: '_shared.yaml#/components/responses/TooMany' }
+  /logout:
+    post:
+      tags: [sessions]
+      operationId: logout
+      responses:
+        '204': { description: 'Сессия завершена, cookies очищены' }
+  /sessions:
+    get:
+      tags: [sessions]
+      operationId: listSessions
+      responses:
+        '200':
+          description: Активные сессии
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/SessionsRs' }
+        '401': { $ref: '_shared.yaml#/components/responses/Unauthorized' }
+    delete:
+      tags: [sessions]
+      operationId: revokeOtherSessions
+      summary: Завершить все сессии, кроме текущей
+      responses:
+        '204': { description: 'Готово' }
+  /sessions/{sessionId}:
+    delete:
+      tags: [sessions]
+      operationId: revokeSession
+      parameters:
+        - { name: sessionId, in: path, required: true, schema: { $ref: '_shared.yaml#/components/schemas/Uuid' } }
+      responses:
+        '204': { description: 'Готово' }
+        '404': { $ref: '_shared.yaml#/components/responses/NotFound' }
+  /me:
+    get:
+      tags: [me]
+      operationId: getMe
+      responses:
+        '200':
+          description: Текущий пользователь и его компании
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/MeRs' }
+        '401': { $ref: '_shared.yaml#/components/responses/Unauthorized' }
+    patch:
+      tags: [me]
+      operationId: updateMe
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/UpdateMeRq' }
+      responses:
+        '200':
+          description: Обновлено
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/MeRs' }
+        '422': { $ref: '_shared.yaml#/components/responses/Unprocessable' }
+  /me/delete:
+    post:
+      tags: [me]
+      operationId: deleteMe
+      summary: Удалить аккаунт (нужен свежий код из почты)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [code]
+              properties:
+                code: { type: string, pattern: '^\d{6}$' }
+      responses:
+        '202': { description: 'Удаление запланировано' }
+        '422': { $ref: '_shared.yaml#/components/responses/Unprocessable' }
+  /companies:
+    post:
+      tags: [companies]
+      operationId: createCompany
+      parameters:
+        - $ref: '_shared.yaml#/components/parameters/IdempotencyKey'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/CreateCompanyRq' }
+      responses:
+        '201':
+          description: Создана, пользователь — OWNER. Новые токены выдаются через /refresh.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Company' }
+        '422': { $ref: '_shared.yaml#/components/responses/Unprocessable' }
+  /companies/{companyId}:
+    parameters:
+      - $ref: '_shared.yaml#/components/parameters/CompanyId'
+    get:
+      tags: [companies]
+      operationId: getCompany
+      responses:
+        '200':
+          description: Компания
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Company' }
+        '404': { $ref: '_shared.yaml#/components/responses/NotFound' }
+    patch:
+      tags: [companies]
+      operationId: updateCompany
+      parameters:
+        - $ref: '_shared.yaml#/components/parameters/IfMatch'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/UpdateCompanyRq' }
+      responses:
+        '200':
+          description: Обновлена
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Company' }
+        '403': { $ref: '_shared.yaml#/components/responses/Forbidden' }
+        '404': { $ref: '_shared.yaml#/components/responses/NotFound' }
+        '409': { $ref: '_shared.yaml#/components/responses/Conflict' }
+    delete:
+      tags: [companies]
+      operationId: deleteCompany
+      responses:
+        '202': { description: 'Удаление запланировано (OWNER)' }
+        '403': { $ref: '_shared.yaml#/components/responses/Forbidden' }
+        '404': { $ref: '_shared.yaml#/components/responses/NotFound' }
+  /companies/{companyId}/members:
+    parameters:
+      - $ref: '_shared.yaml#/components/parameters/CompanyId'
+    get:
+      tags: [companies]
+      operationId: listMembers
+      responses:
+        '200':
+          description: Участники и приглашения
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/MembersRs' }
+        '404': { $ref: '_shared.yaml#/components/responses/NotFound' }
+    post:
+      tags: [companies]
+      operationId: inviteMember
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/InviteRq' }
+      responses:
+        '201':
+          description: Приглашение отправлено
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Invitation' }
+        '403': { $ref: '_shared.yaml#/components/responses/Forbidden' }
+        '409': { $ref: '_shared.yaml#/components/responses/Conflict' }
+        '429': { $ref: '_shared.yaml#/components/responses/TooMany' }
+  /companies/{companyId}/members/{userId}:
+    parameters:
+      - $ref: '_shared.yaml#/components/parameters/CompanyId'
+      - { name: userId, in: path, required: true, schema: { $ref: '_shared.yaml#/components/schemas/Uuid' } }
+    patch:
+      tags: [companies]
+      operationId: changeMemberRole
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [role]
+              properties:
+                role: { $ref: '_shared.yaml#/components/schemas/CompanyRole' }
+      responses:
+        '200':
+          description: Роль изменена
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Member' }
+        '403': { $ref: '_shared.yaml#/components/responses/Forbidden' }
+        '404': { $ref: '_shared.yaml#/components/responses/NotFound' }
+        '422': { $ref: '_shared.yaml#/components/responses/Unprocessable' }
+    delete:
+      tags: [companies]
+      operationId: removeMember
+      responses:
+        '204': { description: 'Удалён' }
+        '403': { $ref: '_shared.yaml#/components/responses/Forbidden' }
+        '404': { $ref: '_shared.yaml#/components/responses/NotFound' }
+  /.well-known/jwks.json:
+    get:
+      tags: [sessions]
+      operationId: getJwks
+      security: []
+      responses:
+        '200':
+          description: Публичные ключи ES256
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [keys]
+                properties:
+                  keys: { type: array, items: { type: object, additionalProperties: true } }
+  /admin/users:
+    get:
+      tags: [admin]
+      operationId: adminListUsers
+      description: Только platform:ADMIN
+      parameters:
+        - $ref: '_shared.yaml#/components/parameters/Query'
+        - $ref: '_shared.yaml#/components/parameters/Page'
+        - $ref: '_shared.yaml#/components/parameters/Size'
+        - { name: status, in: query, schema: { $ref: '#/components/schemas/UserStatus' } }
+      responses:
+        '200':
+          description: Пользователи
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/AdminUsersPage' }
+        '403': { $ref: '_shared.yaml#/components/responses/Forbidden' }
+  /admin/users/{userId}:
+    parameters:
+      - { name: userId, in: path, required: true, schema: { $ref: '_shared.yaml#/components/schemas/Uuid' } }
+    get:
+      tags: [admin]
+      operationId: adminGetUser
+      responses:
+        '200':
+          description: Пользователь (без финансовых данных)
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/AdminUserDetail' }
+        '404': { $ref: '_shared.yaml#/components/responses/NotFound' }
+  /admin/users/{userId}/block:
+    post:
+      tags: [admin]
+      operationId: adminBlockUser
+      parameters:
+        - { name: userId, in: path, required: true, schema: { $ref: '_shared.yaml#/components/schemas/Uuid' } }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [blocked, reason]
+              properties:
+                blocked: { type: boolean }
+                reason: { type: string, minLength: 3, maxLength: 500 }
+      responses:
+        '200':
+          description: Статус изменён, сессии отозваны при блокировке
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/AdminUserDetail' }
+  /admin/users/{userId}/sessions:
+    delete:
+      tags: [admin]
+      operationId: adminRevokeUserSessions
+      parameters:
+        - { name: userId, in: path, required: true, schema: { $ref: '_shared.yaml#/components/schemas/Uuid' } }
+      responses:
+        '204': { description: 'Сессии отозваны' }
+  /admin/stats:
+    get:
+      tags: [admin]
+      operationId: adminStats
+      responses:
+        '200':
+          description: Сводка платформы
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/AdminStats' }
+  /admin/audit:
+    get:
+      tags: [admin]
+      operationId: adminAudit
+      parameters:
+        - $ref: '_shared.yaml#/components/parameters/Cursor'
+        - $ref: '_shared.yaml#/components/parameters/Limit'
+        - { name: action, in: query, schema: { type: string, maxLength: 64 } }
+        - { name: actorId, in: query, schema: { $ref: '_shared.yaml#/components/schemas/Uuid' } }
+        - $ref: '_shared.yaml#/components/parameters/From'
+        - $ref: '_shared.yaml#/components/parameters/To'
+      responses:
+        '200':
+          description: Записи аудита
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/AuditPage' }
+  /admin/ai-providers:
+    get:
+      tags: [admin]
+      operationId: adminListAiProviders
+      responses:
+        '200':
+          description: Настройки ИИ (ключи маской)
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/AiSettings' }
+    put:
+      tags: [admin]
+      operationId: adminUpdateAiProviders
+      parameters:
+        - $ref: '_shared.yaml#/components/parameters/IfMatch'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/AiSettingsUpdate' }
+      responses:
+        '200':
+          description: Сохранено
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/AiSettings' }
+        '409': { $ref: '_shared.yaml#/components/responses/Conflict' }
+        '422': { $ref: '_shared.yaml#/components/responses/Unprocessable' }
+  /admin/ai-providers/{provider}/test:
+    post:
+      tags: [admin]
+      operationId: adminTestAiProvider
+      parameters:
+        - { name: provider, in: path, required: true, schema: { $ref: '#/components/schemas/AiProvider' } }
+      responses:
+        '200':
+          description: Результат тестового запроса
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [ok, latencyMs]
+                properties:
+                  ok: { type: boolean }
+                  latencyMs: { type: integer }
+                  model: { type: string }
+                  message: { type: string }
+  /internal/v1/service-token:
+    post:
+      tags: [internal]
+      operationId: issueServiceToken
+      description: client_credentials для сервисов. Снаружи закрыт.
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/x-www-form-urlencoded:
+            schema:
+              type: object
+              required: [grant_type, client_id, client_secret, audience]
+              properties:
+                grant_type: { type: string, const: client_credentials }
+                client_id: { type: string }
+                client_secret: { type: string }
+                audience: { type: string }
+      responses:
+        '200':
+          description: Токен
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [access_token, expires_in, token_type]
+                properties:
+                  access_token: { type: string }
+                  expires_in: { type: integer }
+                  token_type: { type: string, const: Bearer }
+  /internal/v1/ai-settings:
+    get:
+      tags: [internal]
+      operationId: internalAiSettings
+      description: Расшифрованные настройки для AiGateway других сервисов (serviceAuth)
+      security:
+        - serviceAuth: []
+      responses:
+        '200':
+          description: Настройки
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/AiSettingsInternal' }
+  /internal/v1/companies/{companyId}/members:
+    get:
+      tags: [internal]
+      operationId: internalCompanyRecipients
+      security:
+        - serviceAuth: []
+      parameters:
+        - $ref: '_shared.yaml#/components/parameters/CompanyId'
+      responses:
+        '200':
+          description: Authorized recipients snapshot for notify, without financial data
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/MembersRs' }
+        '404': { $ref: '_shared.yaml#/components/responses/NotFound' }
+  /internal/v1/mail-deliveries/{deliveryId}:
+    get:
+      tags: [internal]
+      operationId: internalGetMailDelivery
+      description: Only notify service; short-lived payload decrypted in transit, no logs/history/DLQ
+      security:
+        - serviceAuth: []
+      parameters:
+        - { name: deliveryId, in: path, required: true, schema: { $ref: '_shared.yaml#/components/schemas/Uuid' } }
+      responses:
+        '200':
+          description: Mail payload only before expiry
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [email, code, expiresAt]
+                properties:
+                  email: { type: string, format: email }
+                  code: { type: string, pattern: '^\d{6}$' }
+                  expiresAt: { $ref: '_shared.yaml#/components/schemas/Instant' }
+        '404': { $ref: '_shared.yaml#/components/responses/NotFound' }
+    delete:
+      tags: [internal]
+      operationId: internalAckMailDelivery
+      security:
+        - serviceAuth: []
+      parameters:
+        - { name: deliveryId, in: path, required: true, schema: { $ref: '_shared.yaml#/components/schemas/Uuid' } }
+      responses:
+        '204': { description: Expired or delivered payload purged }
+components:
+  securitySchemes:
+    cookieAuth:
+      $ref: '_shared.yaml#/components/securitySchemes/cookieAuth'
+    bearerAuth:
+      $ref: '_shared.yaml#/components/securitySchemes/bearerAuth'
+    serviceAuth:
+      $ref: '_shared.yaml#/components/securitySchemes/serviceAuth'
+  schemas:
+    ClientKind:
+      type: string
+      enum: [WEB, ADMIN, ANDROID]
+    UserStatus:
+      type: string
+      enum: [ACTIVE, BLOCKED, DELETION_PENDING]
+    CodeRq:
+      type: object
+      required: [email, client]
+      properties:
+        email: { type: string, format: email, maxLength: 254 }
+        client: { $ref: '#/components/schemas/ClientKind' }
+    CodeRs:
+      type: object
+      required: [maskedEmail, expiresInSec, resendAfterSec, codeLength]
+      properties:
+        maskedEmail: { type: string, examples: ['an•••@mail.ru'] }
+        expiresInSec: { type: integer }
+        resendAfterSec: { type: integer }
+        codeLength: { type: integer, const: 6 }
+        demoCode:
+          type: string
+          description: Только при AUTH_DEMO_CODE_IN_RESPONSE=true (никогда в prod)
+    VerifyRq:
+      type: object
+      required: [email, code, client]
+      properties:
+        email: { type: string, format: email, maxLength: 254 }
+        code: { type: string, pattern: '^\d{6}$' }
+        client: { $ref: '#/components/schemas/ClientKind' }
+        deviceName: { type: string, maxLength: 100 }
+    RefreshRq:
+      type: object
+      required: [refreshToken]
+      properties:
+        refreshToken: { type: string, maxLength: 200 }
+    SessionRs:
+      type: object
+      required: [user, accessExpiresAt, isNewUser]
+      properties:
+        user: { $ref: '#/components/schemas/User' }
+        isNewUser: { type: boolean }
+        accessExpiresAt: { $ref: '_shared.yaml#/components/schemas/Instant' }
+        accessToken: { type: string, description: 'Только ANDROID' }
+        refreshToken: { type: string, description: 'Только ANDROID' }
+        csrfToken: { type: string, description: 'WEB/ADMIN — значение для X-CSRF-Token' }
+    User:
+      type: object
+      required: [id, email, timezone, platformAdmin]
+      properties:
+        id: { $ref: '_shared.yaml#/components/schemas/Uuid' }
+        email: { type: string, format: email }
+        name: { type: string, maxLength: 100 }
+        timezone: { type: string, examples: [Europe/Moscow] }
+        platformAdmin: { type: boolean }
+    MeRs:
+      type: object
+      required: [user, companies]
+      properties:
+        user: { $ref: '#/components/schemas/User' }
+        companies:
+          type: array
+          items: { $ref: '#/components/schemas/CompanyMembership' }
+    UpdateMeRq:
+      type: object
+      properties:
+        name: { type: string, maxLength: 100 }
+        timezone: { type: string, maxLength: 64 }
+    CompanyMembership:
+      type: object
+      required: [company, role]
+      properties:
+        company: { $ref: '#/components/schemas/Company' }
+        role: { $ref: '_shared.yaml#/components/schemas/CompanyRole' }
+    Company:
+      type: object
+      required: [id, name, taxRegime, hasEmployees, minBalance, version, createdAt]
+      properties:
+        id: { $ref: '_shared.yaml#/components/schemas/Uuid' }
+        name: { type: string, minLength: 1, maxLength: 200 }
+        inn: { type: string, pattern: '^(\d{10}|\d{12})$' }
+        industry: { type: string, maxLength: 100 }
+        taxRegime: { $ref: '_shared.yaml#/components/schemas/TaxRegime' }
+        vatPayer: { type: boolean }
+        hasEmployees: { type: boolean }
+        payrollDays:
+          type: array
+          maxItems: 4
+          items: { type: integer, minimum: 1, maximum: 31 }
+        minBalance: { $ref: '_shared.yaml#/components/schemas/Money' }
+        timezone: { type: string }
+        version: { type: integer }
+        createdAt: { $ref: '_shared.yaml#/components/schemas/Instant' }
+    CreateCompanyRq:
+      type: object
+      required: [name, taxRegime, hasEmployees]
+      properties:
+        name: { type: string, minLength: 1, maxLength: 200 }
+        inn: { type: string, pattern: '^(\d{10}|\d{12})$' }
+        industry: { type: string, maxLength: 100 }
+        taxRegime: { $ref: '_shared.yaml#/components/schemas/TaxRegime' }
+        vatPayer: { type: boolean, default: false }
+        hasEmployees: { type: boolean }
+        payrollDays:
+          type: array
+          maxItems: 4
+          items: { type: integer, minimum: 1, maximum: 31 }
+        minBalance: { $ref: '_shared.yaml#/components/schemas/Money' }
+    UpdateCompanyRq:
+      type: object
+      properties:
+        name: { type: string, minLength: 1, maxLength: 200 }
+        industry: { type: string, maxLength: 100 }
+        taxRegime: { $ref: '_shared.yaml#/components/schemas/TaxRegime' }
+        vatPayer: { type: boolean }
+        hasEmployees: { type: boolean }
+        payrollDays:
+          type: array
+          maxItems: 4
+          items: { type: integer, minimum: 1, maximum: 31 }
+        minBalance: { $ref: '_shared.yaml#/components/schemas/Money' }
+    Member:
+      type: object
+      required: [userId, email, role, joinedAt]
+      properties:
+        userId: { $ref: '_shared.yaml#/components/schemas/Uuid' }
+        email: { type: string }
+        name: { type: string }
+        role: { $ref: '_shared.yaml#/components/schemas/CompanyRole' }
+        joinedAt: { $ref: '_shared.yaml#/components/schemas/Instant' }
+    Invitation:
+      type: object
+      required: [id, email, role, expiresAt]
+      properties:
+        id: { $ref: '_shared.yaml#/components/schemas/Uuid' }
+        email: { type: string }
+        role: { $ref: '_shared.yaml#/components/schemas/CompanyRole' }
+        expiresAt: { $ref: '_shared.yaml#/components/schemas/Instant' }
+    InviteRq:
+      type: object
+      required: [email, role]
+      properties:
+        email: { type: string, format: email, maxLength: 254 }
+        role: { $ref: '_shared.yaml#/components/schemas/CompanyRole' }
+    MembersRs:
+      type: object
+      required: [members, invitations]
+      properties:
+        members: { type: array, items: { $ref: '#/components/schemas/Member' } }
+        invitations: { type: array, items: { $ref: '#/components/schemas/Invitation' } }
+    Session:
+      type: object
+      required: [id, client, createdAt, lastSeenAt, current]
+      properties:
+        id: { $ref: '_shared.yaml#/components/schemas/Uuid' }
+        client: { $ref: '#/components/schemas/ClientKind' }
+        deviceName: { type: string }
+        ipCountry: { type: string }
+        createdAt: { $ref: '_shared.yaml#/components/schemas/Instant' }
+        lastSeenAt: { $ref: '_shared.yaml#/components/schemas/Instant' }
+        current: { type: boolean }
+    SessionsRs:
+      type: object
+      required: [items]
+      properties:
+        items: { type: array, items: { $ref: '#/components/schemas/Session' } }
+    AdminUser:
+      type: object
+      required: [id, email, status, companiesCount, createdAt]
+      properties:
+        id: { $ref: '_shared.yaml#/components/schemas/Uuid' }
+        email: { type: string }
+        name: { type: string }
+        status: { $ref: '#/components/schemas/UserStatus' }
+        companiesCount: { type: integer }
+        lastLoginAt: { $ref: '_shared.yaml#/components/schemas/Instant' }
+        createdAt: { $ref: '_shared.yaml#/components/schemas/Instant' }
+    AdminUserDetail:
+      allOf:
+        - $ref: '#/components/schemas/AdminUser'
+        - type: object
+          required: [companies, activeSessions]
+          properties:
+            companies:
+              type: array
+              items:
+                type: object
+                required: [id, name, role]
+                properties:
+                  id: { $ref: '_shared.yaml#/components/schemas/Uuid' }
+                  name: { type: string }
+                  role: { $ref: '_shared.yaml#/components/schemas/CompanyRole' }
+            activeSessions: { type: integer }
+    AdminUsersPage:
+      allOf:
+        - $ref: '_shared.yaml#/components/schemas/PageMeta'
+        - type: object
+          required: [items]
+          properties:
+            items: { type: array, items: { $ref: '#/components/schemas/AdminUser' } }
+    AdminStats:
+      type: object
+      required: [usersTotal, usersActive7d, companiesTotal, loginsToday, loginFailuresToday]
+      properties:
+        usersTotal: { type: integer }
+        usersActive7d: { type: integer }
+        companiesTotal: { type: integer }
+        loginsToday: { type: integer }
+        loginFailuresToday: { type: integer }
+    AuditEntry:
+      type: object
+      required: [id, at, action, actorType]
+      properties:
+        id: { $ref: '_shared.yaml#/components/schemas/Uuid' }
+        at: { $ref: '_shared.yaml#/components/schemas/Instant' }
+        action: { type: string, examples: [LOGIN_SUCCESS, LOGIN_FAILED, ROLE_CHANGED, USER_BLOCKED, AI_SETTINGS_CHANGED] }
+        actorType: { type: string, enum: [USER, ADMIN, SYSTEM] }
+        actorId: { $ref: '_shared.yaml#/components/schemas/Uuid' }
+        actorEmailMasked: { type: string }
+        targetType: { type: string }
+        targetId: { type: string }
+        ipMasked: { type: string }
+        details: { type: object, additionalProperties: { type: string } }
+    AuditPage:
+      type: object
+      required: [items]
+      properties:
+        items: { type: array, items: { $ref: '#/components/schemas/AuditEntry' } }
+        nextCursor: { type: [string, 'null'] }
+    AiProvider:
+      type: string
+      enum: [JEV, JEFF, OPENAI_COMPATIBLE, GIGACHAT, NONE]
+    AiTask:
+      type: string
+      enum: [CATEGORIZE, PARSE_EVENT, EXPLAIN, COUNTERPARTY_RISK]
+    AiProviderConfig:
+      type: object
+      required: [provider, enabled]
+      properties:
+        provider: { $ref: '#/components/schemas/AiProvider' }
+        enabled: { type: boolean }
+        baseUrl: { type: string, format: uri, maxLength: 300 }
+        model: { type: string, maxLength: 100 }
+        timeoutMs: { type: integer, minimum: 500, maximum: 30000 }
+        apiKeyMasked: { type: string, examples: ['sk-•••••a91f'] }
+    AiSettings:
+      type: object
+      required: [providers, chains, version]
+      properties:
+        providers: { type: array, items: { $ref: '#/components/schemas/AiProviderConfig' } }
+        chains:
+          type: object
+          description: Цепочка провайдеров на задачу
+          additionalProperties:
+            type: array
+            items: { $ref: '#/components/schemas/AiProvider' }
+        version: { type: integer }
+    AiSettingsUpdate:
+      type: object
+      required: [providers, chains]
+      properties:
+        providers:
+          type: array
+          items:
+            allOf:
+              - $ref: '#/components/schemas/AiProviderConfig'
+              - type: object
+                properties:
+                  apiKey: { type: string, maxLength: 500, writeOnly: true, description: 'Пусто — не менять' }
+        chains:
+          type: object
+          additionalProperties:
+            type: array
+            items: { $ref: '#/components/schemas/AiProvider' }
+    AiSettingsInternal:
+      type: object
+      required: [providers, chains, version]
+      properties:
+        providers:
+          type: array
+          items:
+            allOf:
+              - $ref: '#/components/schemas/AiProviderConfig'
+              - type: object
+                properties:
+                  apiKey: { type: string }
+        chains:
+          type: object
+          additionalProperties:
+            type: array
+            items: { $ref: '#/components/schemas/AiProvider' }
+        version: { type: integer }

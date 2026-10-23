@@ -1,0 +1,22 @@
+* text=auto eol=lf
+
+*.bat text eol=crlf
+*.cmd text eol=crlf
+*.ps1 text eol=crlf
+
+*.png binary
+*.jpg binary
+*.webp binary
+*.ico binary
+*.jar binary
+*.docx binary
+*.pdf binary
+*.woff2 binary
+
+docs/MEMORY.md merge=union
+
+pnpm-lock.yaml linguist-generated=true merge=binary
+uv.lock linguist-generated=true merge=binary
+frontend/packages/api/src/generated/** linguist-generated=true
+frontend/packages/tokens/dist/** linguist-generated=true
+android/core/designsystem/src/main/kotlin/**/generated/** linguist-generated=true

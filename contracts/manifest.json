@@ -1,0 +1,90 @@
+{
+  "schemaVersion": 1,
+  "description": "Zapas API/event contracts. Product repos pin this manifest by SHA-256 and a hub git ref.",
+  "files": [
+    {
+      "path": "contracts/events/auth.company-created.v1.schema.json",
+      "sha256": "19df981b666c8abc3a49485070f1e49ed586c006356ee3fdde97e7cf82647a81"
+    },
+    {
+      "path": "contracts/events/auth.company-deleted.v1.schema.json",
+      "sha256": "81202762299102e5b2309867823b32c1e0cfd38311e26b5630abb96cc663c0ba"
+    },
+    {
+      "path": "contracts/events/auth.company-updated.v1.schema.json",
+      "sha256": "2283449efc4a3a661c4ac556b0c4cc6de0dc534655732d4aa156608a36a2f639"
+    },
+    {
+      "path": "contracts/events/auth.mail-command.v1.schema.json",
+      "sha256": "8a7fc007c572e1e9ed679a7ad34e6fae3c5f4454759ece09741fd738ace44e62"
+    },
+    {
+      "path": "contracts/events/auth.member-invited.v1.schema.json",
+      "sha256": "ff826d37b4ca3f2cd304d99cfdc1c8848cbc07ed473290220697173f9f3d880c"
+    },
+    {
+      "path": "contracts/events/envelope.schema.json",
+      "sha256": "bf2d3ac327cd665064276add273b7155576da9a80dd3b8583d06cb8de8e0380d"
+    },
+    {
+      "path": "contracts/events/events.json",
+      "sha256": "961de466db47beb1182b5fca0ed977605778da78f3562bec108ab336d46feea9"
+    },
+    {
+      "path": "contracts/events/forecast.alert-raised.v1.schema.json",
+      "sha256": "b6478b641735e1106976af55fa38f16244082e055f10abf9be1f87a1a9bc7392"
+    },
+    {
+      "path": "contracts/events/forecast.forecast-updated.v1.schema.json",
+      "sha256": "58ed5e2c9e15bcae477c971280157f3537c0b1a276956940c01c9cb12c134876"
+    },
+    {
+      "path": "contracts/events/ledger.categories-changed.v1.schema.json",
+      "sha256": "cfd6b5a1451f7e9d01b97d1411db0584ae65e79ba2c290d3fc32ed2344ec2b41"
+    },
+    {
+      "path": "contracts/events/ledger.recurring-changed.v1.schema.json",
+      "sha256": "2f946173cd1be3caa0e3315846e2b5824d90218d08be678831dfa08abdda4e42"
+    },
+    {
+      "path": "contracts/events/ledger.transactions-imported.v1.schema.json",
+      "sha256": "a4b917ed591da51a3cfcb60f412c48095525f6f336544537ebac517d4e050044"
+    },
+    {
+      "path": "contracts/events/planning.events-changed.v1.schema.json",
+      "sha256": "2d3e2e7cfee04e1613fe88464a991e9b91cbff14a004cb60f23ae7c877721115"
+    },
+    {
+      "path": "contracts/events/planning.expected-payment-overdue.v1.schema.json",
+      "sha256": "98f1d81e696cd8bc29d48d0525bf7d8dead8ce8eaca20f8c49a5fd3cb8e054a2"
+    },
+    {
+      "path": "contracts/openapi/_shared.yaml",
+      "sha256": "2edcb70a3d1c4f980c590991537821059fbfb5348cf70679e59caaa8f80af60a"
+    },
+    {
+      "path": "contracts/openapi/auth.yaml",
+      "sha256": "6326abd0944c898aff8f69c4f80d2cc0d9481b080177ffad73bb8aa4fc9eb4c9"
+    },
+    {
+      "path": "contracts/openapi/forecast-ml.yaml",
+      "sha256": "e9fdb8216088630b3fb4aa0ea9709815584da1961cc2faf70e64de7e127da863"
+    },
+    {
+      "path": "contracts/openapi/forecast.yaml",
+      "sha256": "0ac4366f35218aefc346c6a835c48b1f445aee7e26835657461223e719343c36"
+    },
+    {
+      "path": "contracts/openapi/ledger.yaml",
+      "sha256": "7116595f34c377c95d62e626be6e64b11b09fd3efcfbe14a321369e47bbd1a65"
+    },
+    {
+      "path": "contracts/openapi/notify.yaml",
+      "sha256": "81cbbd98c803bfad0bb57dd984da1c4ccca11ce22a98d255c8c4264def2da028"
+    },
+    {
+      "path": "contracts/openapi/planning.yaml",
+      "sha256": "89e074c23e336cb4ea0f1a3db333b1c06bdcafa492b194a188ecf57e58b15bd3"
+    }
+  ]
+}

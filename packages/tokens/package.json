@@ -1,0 +1,29 @@
+{
+  "name": "@zapas/tokens",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "exports": {
+    ".": "./src/tokens.ts",
+    "./motion": "./src/motion.ts",
+    "./theme.css": "./dist/theme.css",
+    "./tokens.json": "./dist/tokens.json"
+  },
+  "scripts": {
+    "gen": "node --experimental-strip-types scripts/gen-tokens.ts",
+    "typecheck": "tsc --noEmit",
+    "lint": "eslint . --max-warnings 0",
+    "test": "vitest run"
+  },
+  "peerDependencies": {
+    "motion": "14.6.0"
+  },
+  "devDependencies": {
+    "@types/node": "24.19.2",
+    "@zapas/config": "workspace:*",
+    "eslint": "9.39.5",
+    "motion": "14.6.0",
+    "typescript": "5.9.3",
+    "vitest": "4.1.12"
+  }
+}

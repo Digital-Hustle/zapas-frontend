@@ -1,0 +1,8 @@
+* @miroslavrov
+/apps/web/ @miroslavrov
+/packages/charts/ @miroslavrov
+/apps/admin/ @miroslavrov
+/packages/{tokens,ui,api,config}/ @miroslavrov
+/contracts/ @miroslavrov
+/tools/ @miroslavrov
+/.github/ @miroslavrov

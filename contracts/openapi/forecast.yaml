@@ -1,0 +1,561 @@
+openapi: 3.1.0
+info:
+  title: Zapas forecast
+  version: 1.0.0
+  description: Прогноз остатка, риски разрыва, объяснения, рекомендации, сценарии, предупреждения, точность модели, бэктест. Владелец B2.
+servers:
+  - url: /api/v1/forecast
+security:
+  - cookieAuth: []
+  - bearerAuth: []
+paths:
+  /companies/{companyId}/current:
+    get:
+      tags: [forecast]
+      operationId: getCurrentForecast
+      summary: Актуальный базовый прогноз (дашборд)
+      parameters:
+        - $ref: '_shared.yaml#/components/parameters/CompanyId'
+        - { name: horizon, in: query, schema: { type: integer, enum: [30, 60, 90], default: 90 } }
+        - { name: historyDays, in: query, description: 'Сколько дней факта до сегодня включить в ответ', schema: { type: integer, minimum: 0, maximum: 365, default: 60 } }
+      responses:
+        '200':
+          description: Прогноз
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Forecast' }
+        '404': { $ref: '_shared.yaml#/components/responses/NotFound' }
+        '422': { $ref: '_shared.yaml#/components/responses/Unprocessable' }
+  /companies/{companyId}/recalculate:
+    post:
+      tags: [forecast]
+      operationId: recalculateForecast
+      summary: Принудительный пересчёт (обычно идёт по событиям)
+      parameters:
+        - $ref: '_shared.yaml#/components/parameters/CompanyId'
+        - { name: full, in: query, description: 'true — с переобучением и бэктестом компании', schema: { type: boolean, default: false } }
+      responses:
+        '202':
+          description: Принято
+          content:
+            application/json:
+              schema: { $ref: '_shared.yaml#/components/schemas/Job' }
+        '429': { $ref: '_shared.yaml#/components/responses/TooMany' }
+  /companies/{companyId}/jobs/{jobId}:
+    get:
+      tags: [forecast]
+      operationId: getForecastJob
+      parameters:
+        - $ref: '_shared.yaml#/components/parameters/CompanyId'
+        - { name: jobId, in: path, required: true, schema: { $ref: '_shared.yaml#/components/schemas/Uuid' } }
+      responses:
+        '200':
+          description: Статус
+          content:
+            application/json:
+              schema: { $ref: '_shared.yaml#/components/schemas/Job' }
+        '404': { $ref: '_shared.yaml#/components/responses/NotFound' }
+  /companies/{companyId}/risks:
+    get:
+      tags: [risks]
+      operationId: listRisks
+      parameters:
+        - $ref: '_shared.yaml#/components/parameters/CompanyId'
+      responses:
+        '200':
+          description: Риски текущего прогноза, по дате
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [items]
+                properties:
+                  items: { type: array, items: { $ref: '#/components/schemas/Risk' } }
+  /companies/{companyId}/risks/{riskId}:
+    get:
+      tags: [risks]
+      operationId: getRisk
+      parameters:
+        - $ref: '_shared.yaml#/components/parameters/CompanyId'
+        - { name: riskId, in: path, required: true, schema: { $ref: '_shared.yaml#/components/schemas/Uuid' } }
+      responses:
+        '200':
+          description: Разрыв с причинами и рекомендациями
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/RiskDetail' }
+        '404': { $ref: '_shared.yaml#/components/responses/NotFound' }
+  /companies/{companyId}/scenarios/preview:
+    post:
+      tags: [scenarios]
+      operationId: previewScenario
+      summary: Прогноз при негативном сценарии (не сохраняется), сравнение с базой
+      parameters:
+        - $ref: '_shared.yaml#/components/parameters/CompanyId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: 'planning.yaml#/components/schemas/ScenarioRq' }
+      responses:
+        '200':
+          description: Сравнение
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ScenarioComparison' }
+        '422': { $ref: '_shared.yaml#/components/responses/Unprocessable' }
+        '429': { $ref: '_shared.yaml#/components/responses/TooMany' }
+  /companies/{companyId}/scenarios/{scenarioId}/forecast:
+    get:
+      tags: [scenarios]
+      operationId: getScenarioForecast
+      parameters:
+        - $ref: '_shared.yaml#/components/parameters/CompanyId'
+        - { name: scenarioId, in: path, required: true, schema: { $ref: '_shared.yaml#/components/schemas/Uuid' } }
+      responses:
+        '200':
+          description: Сравнение сохранённого сценария с базой
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ScenarioComparison' }
+        '404': { $ref: '_shared.yaml#/components/responses/NotFound' }
+  /companies/{companyId}/recommendations/{recommendationId}/simulate:
+    post:
+      tags: [risks]
+      operationId: simulateRecommendation
+      summary: Показать прогноз, если применить рекомендацию
+      parameters:
+        - $ref: '_shared.yaml#/components/parameters/CompanyId'
+        - { name: recommendationId, in: path, required: true, schema: { $ref: '_shared.yaml#/components/schemas/Uuid' } }
+      responses:
+        '200':
+          description: Сравнение
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ScenarioComparison' }
+        '404': { $ref: '_shared.yaml#/components/responses/NotFound' }
+  /companies/{companyId}/alerts:
+    get:
+      tags: [alerts]
+      operationId: listAlerts
+      parameters:
+        - $ref: '_shared.yaml#/components/parameters/CompanyId'
+        - { name: status, in: query, schema: { $ref: '#/components/schemas/AlertStatus' } }
+        - { name: since, in: query, description: 'Только созданные после момента (для Android-опроса)', schema: { $ref: '_shared.yaml#/components/schemas/Instant' } }
+        - $ref: '_shared.yaml#/components/parameters/Cursor'
+        - $ref: '_shared.yaml#/components/parameters/Limit'
+      responses:
+        '200':
+          description: Предупреждения
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [items, unreadCount]
+                properties:
+                  items: { type: array, items: { $ref: '#/components/schemas/Alert' } }
+                  nextCursor: { type: [string, 'null'] }
+                  unreadCount: { type: integer }
+  /companies/{companyId}/alerts/{alertId}:
+    patch:
+      tags: [alerts]
+      operationId: updateAlert
+      parameters:
+        - $ref: '_shared.yaml#/components/parameters/CompanyId'
+        - { name: alertId, in: path, required: true, schema: { $ref: '_shared.yaml#/components/schemas/Uuid' } }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [status]
+              properties:
+                status: { $ref: '#/components/schemas/AlertStatus' }
+      responses:
+        '200':
+          description: Обновлено
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Alert' }
+        '404': { $ref: '_shared.yaml#/components/responses/NotFound' }
+  /companies/{companyId}/accuracy:
+    get:
+      tags: [quality]
+      operationId: getCompanyAccuracy
+      summary: Точность прогноза на истории этой компании (для пользователя)
+      parameters:
+        - $ref: '_shared.yaml#/components/parameters/CompanyId'
+      responses:
+        '200':
+          description: Точность
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/CompanyAccuracy' }
+  /admin/backtests:
+    get:
+      tags: [admin]
+      operationId: adminListBacktests
+      responses:
+        '200':
+          description: Запуски бэктеста
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [items]
+                properties:
+                  items: { type: array, items: { $ref: '#/components/schemas/BacktestRunSummary' } }
+    post:
+      tags: [admin]
+      operationId: adminRunBacktest
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/BacktestRq' }
+      responses:
+        '202':
+          description: Запущен
+          content:
+            application/json:
+              schema: { $ref: '_shared.yaml#/components/schemas/Job' }
+        '429': { $ref: '_shared.yaml#/components/responses/TooMany' }
+  /admin/backtests/{runId}:
+    get:
+      tags: [admin]
+      operationId: adminGetBacktest
+      parameters:
+        - { name: runId, in: path, required: true, schema: { $ref: '_shared.yaml#/components/schemas/Uuid' } }
+      responses:
+        '200':
+          description: Полный отчёт
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/BacktestReport' }
+        '404': { $ref: '_shared.yaml#/components/responses/NotFound' }
+  /admin/overview:
+    get:
+      tags: [admin]
+      operationId: adminForecastOverview
+      responses:
+        '200':
+          description: Агрегаты без данных компаний
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [companiesWithForecast, activeHighRisks, runsToday, avgRunMs, modelUsage]
+                properties:
+                  companiesWithForecast: { type: integer }
+                  activeHighRisks: { type: integer }
+                  runsToday: { type: integer }
+                  avgRunMs: { type: integer }
+                  modelUsage: { type: object, additionalProperties: { type: integer } }
+components:
+  securitySchemes:
+    cookieAuth:
+      $ref: '_shared.yaml#/components/securitySchemes/cookieAuth'
+    bearerAuth:
+      $ref: '_shared.yaml#/components/securitySchemes/bearerAuth'
+    serviceAuth:
+      $ref: '_shared.yaml#/components/securitySchemes/serviceAuth'
+  schemas:
+    ModelName:
+      type: string
+      enum: [NAIVE, SEASONAL_NAIVE, ETS, THETA, LIGHTGBM, CHRONOS2, ENSEMBLE, KNOWN_ONLY]
+    DataQualityLevel:
+      type: string
+      enum: [LOW, MEDIUM, HIGH]
+    DayLayers:
+      type: object
+      required: [known, recurring, residual]
+      properties:
+        known: { $ref: '_shared.yaml#/components/schemas/Money', description: 'Сальдо известных событий дня' }
+        recurring: { $ref: '_shared.yaml#/components/schemas/Money' }
+        residual: { $ref: '_shared.yaml#/components/schemas/Money', description: 'P50 модели остаточного потока' }
+    ForecastDay:
+      type: object
+      required: [date, kind, p50]
+      properties:
+        date: { $ref: '_shared.yaml#/components/schemas/LocalDate' }
+        kind: { type: string, enum: [ACTUAL, FORECAST] }
+        p10: { $ref: '_shared.yaml#/components/schemas/Money' }
+        p50: { $ref: '_shared.yaml#/components/schemas/Money', description: 'Для ACTUAL — фактический остаток' }
+        p90: { $ref: '_shared.yaml#/components/schemas/Money' }
+        pBelowThreshold: { $ref: '_shared.yaml#/components/schemas/Probability' }
+        pBelowZero: { $ref: '_shared.yaml#/components/schemas/Probability', description: 'Вероятность реального отрицательного остатка, независимо от буфера' }
+        inflowP50: { $ref: '_shared.yaml#/components/schemas/Money' }
+        outflowP50: { $ref: '_shared.yaml#/components/schemas/Money' }
+        layers: { $ref: '#/components/schemas/DayLayers' }
+        markers:
+          type: array
+          description: Значимые события дня для графика
+          items:
+            type: object
+            required: [kind, title, amount, direction]
+            properties:
+              kind: { type: string, enum: [TAX, PAYROLL, INVOICE, CONTRACT, LOAN, RENT, MANUAL, OTHER] }
+              title: { type: string }
+              amount: { $ref: '_shared.yaml#/components/schemas/PositiveMoney' }
+              direction: { $ref: '_shared.yaml#/components/schemas/Direction' }
+              eventId: { $ref: '_shared.yaml#/components/schemas/Uuid' }
+    StatusSummary:
+      type: object
+      required: [level, headline]
+      properties:
+        level: { $ref: '_shared.yaml#/components/schemas/RiskLevel' }
+        headline: { type: string, examples: ['Денег хватит до 14 ноября', 'Риск разрыва 17 ноября: не хватит 184 000 ₽'] }
+        safeUntil: { $ref: '_shared.yaml#/components/schemas/LocalDate' }
+        nearestRiskId: { $ref: '_shared.yaml#/components/schemas/Uuid' }
+        runwayDays: { type: [integer, 'null'], description: 'Индекс запаса — дней при нулевых поступлениях' }
+    Forecast:
+      type: object
+      required: [runId, companyId, generatedAt, asOf, horizonDays, threshold, startBalance, model, dataQuality, status, days, risks]
+      properties:
+        runId: { $ref: '_shared.yaml#/components/schemas/Uuid' }
+        companyId: { $ref: '_shared.yaml#/components/schemas/Uuid' }
+        generatedAt: { $ref: '_shared.yaml#/components/schemas/Instant' }
+        asOf: { $ref: '_shared.yaml#/components/schemas/LocalDate', description: 'Последний день факта' }
+        horizonDays: { type: integer }
+        threshold: { $ref: '_shared.yaml#/components/schemas/Money' }
+        startBalance: { $ref: '_shared.yaml#/components/schemas/Money' }
+        model: { $ref: '#/components/schemas/ModelName' }
+        dataQuality: { $ref: '#/components/schemas/DataQualityLevel' }
+        stale: { type: boolean, description: 'Есть новые данные, пересчёт в процессе' }
+        status: { $ref: '#/components/schemas/StatusSummary' }
+        days: { type: array, items: { $ref: '#/components/schemas/ForecastDay' } }
+        risks: { type: array, items: { $ref: '#/components/schemas/Risk' } }
+        accuracy: { $ref: '#/components/schemas/AccuracyBrief' }
+        warnings: { type: array, items: { type: string } }
+    Risk:
+      type: object
+      required: [id, kind, threshold, shortfallBasis, startDate, endDate, durationDays, probability, shortfallP50, shortfallP90, level]
+      properties:
+        id: { $ref: '_shared.yaml#/components/schemas/Uuid' }
+        kind: { type: string, enum: [CASH_GAP, BUFFER_BREACH], description: 'Порог 0 или пользовательский буфер, не путать' }
+        threshold: { $ref: '_shared.yaml#/components/schemas/Money' }
+        shortfallBasis: { type: string, const: CONDITIONAL_ON_BREACH }
+        startDate: { $ref: '_shared.yaml#/components/schemas/LocalDate' }
+        endDate: { $ref: '_shared.yaml#/components/schemas/LocalDate' }
+        durationDays: { type: integer }
+        minBalanceDate: { $ref: '_shared.yaml#/components/schemas/LocalDate' }
+        probability: { $ref: '_shared.yaml#/components/schemas/Probability' }
+        shortfallP50: { $ref: '_shared.yaml#/components/schemas/Money' }
+        shortfallP90: { $ref: '_shared.yaml#/components/schemas/Money' }
+        level: { $ref: '_shared.yaml#/components/schemas/RiskLevel' }
+        daysUntil: { type: integer }
+        summary: { type: string, examples: ['17 ноября может не хватить 184 000 ₽ (вероятность 72 %)'] }
+    RiskCause:
+      type: object
+      required: [kind, title, amount, direction, impact]
+      properties:
+        kind: { type: string, enum: [OUTFLOW, INFLOW_AT_RISK, REVENUE_DECLINE, CONCENTRATION, DATA] }
+        title: { type: string, examples: ['Зарплата 10 ноября', 'Оплата от ООО «Альфа» может задержаться'] }
+        amount: { $ref: '_shared.yaml#/components/schemas/Money' }
+        direction: { $ref: '_shared.yaml#/components/schemas/Direction' }
+        impact: { $ref: '_shared.yaml#/components/schemas/Probability', description: 'Доля вклада в разрыв' }
+        date: { $ref: '_shared.yaml#/components/schemas/LocalDate' }
+        source: { $ref: '_shared.yaml#/components/schemas/EventSource' }
+        sourceId: { $ref: '_shared.yaml#/components/schemas/Uuid' }
+        probabilityLate: { $ref: '_shared.yaml#/components/schemas/Probability' }
+    Recommendation:
+      type: object
+      required: [id, kind, title, description, resolvesGap, effect]
+      properties:
+        id: { $ref: '_shared.yaml#/components/schemas/Uuid' }
+        kind: { type: string, enum: [SHIFT_PAYMENT, REQUEST_PREPAYMENT, SPEED_UP_COLLECTION, CUT_VARIABLE_COSTS, CREDIT_LINE, PAY_TAX_ON_TIME_NOTICE] }
+        title: { type: string, examples: ['Перенести оплату ООО «Поставка» на 6 дней'] }
+        description: { type: string }
+        resolvesGap: { type: boolean }
+        effect:
+          type: object
+          required: [newProbability, newShortfallP50]
+          properties:
+            newProbability: { $ref: '_shared.yaml#/components/schemas/Probability' }
+            newShortfallP50: { $ref: '_shared.yaml#/components/schemas/Money' }
+            newStartDate: { $ref: '_shared.yaml#/components/schemas/LocalDate' }
+        cost: { $ref: '_shared.yaml#/components/schemas/Money', description: 'Например проценты по кредитной линии' }
+        scenario: { $ref: 'planning.yaml#/components/schemas/ScenarioRq', description: 'Готовый сценарий для «Применить как сценарий»' }
+    RiskDetail:
+      allOf:
+        - $ref: '#/components/schemas/Risk'
+        - type: object
+          required: [causes, recommendations, explanation]
+          properties:
+            causes: { type: array, items: { $ref: '#/components/schemas/RiskCause' } }
+            recommendations: { type: array, items: { $ref: '#/components/schemas/Recommendation' } }
+            explanation:
+              type: object
+              required: [text, generatedBy]
+              properties:
+                text: { type: string }
+                generatedBy: { type: string, enum: [TEMPLATE, LLM] }
+    ScenarioComparison:
+      type: object
+      required: [base, scenario, delta]
+      properties:
+        base:
+          type: object
+          required: [days, risks]
+          properties:
+            days: { type: array, items: { $ref: '#/components/schemas/ForecastDay' } }
+            risks: { type: array, items: { $ref: '#/components/schemas/Risk' } }
+        scenario:
+          type: object
+          required: [days, risks]
+          properties:
+            days: { type: array, items: { $ref: '#/components/schemas/ForecastDay' } }
+            risks: { type: array, items: { $ref: '#/components/schemas/Risk' } }
+        delta:
+          type: object
+          required: [newGap, minBalanceDelta]
+          properties:
+            newGap: { type: boolean }
+            firstGapDateBase: { $ref: '_shared.yaml#/components/schemas/LocalDate' }
+            firstGapDateScenario: { $ref: '_shared.yaml#/components/schemas/LocalDate' }
+            shortfallP50Scenario: { $ref: '_shared.yaml#/components/schemas/Money' }
+            minBalanceDelta: { $ref: '_shared.yaml#/components/schemas/Money' }
+            headline: { type: string, examples: ['При задержке оплаты на 3 недели 5 декабря не хватит 412 000 ₽'] }
+    AlertStatus:
+      type: string
+      enum: [NEW, READ, RESOLVED, DISMISSED]
+    Alert:
+      type: object
+      required: [id, kind, severity, title, createdAt, status]
+      properties:
+        id: { $ref: '_shared.yaml#/components/schemas/Uuid' }
+        kind: { type: string, enum: [NEW_GAP, GAP_PROBABILITY_UP, GAP_RESOLVED, PAYMENT_OVERDUE, BELOW_THRESHOLD, LOW_DATA_QUALITY, COUNTERPARTY_STATUS, TAX_DUE_SOON] }
+        severity: { type: string, enum: [INFO, WARNING, CRITICAL] }
+        title: { type: string }
+        body: { type: string }
+        riskId: { $ref: '_shared.yaml#/components/schemas/Uuid' }
+        eventId: { $ref: '_shared.yaml#/components/schemas/Uuid' }
+        actionUrl: { type: string, description: 'Относительный путь в приложении', examples: ['/risks/0192…'] }
+        createdAt: { $ref: '_shared.yaml#/components/schemas/Instant' }
+        status: { $ref: '#/components/schemas/AlertStatus' }
+    AccuracyBrief:
+      type: object
+      required: [horizonDays, smapePercent, coveragePercent, evaluatedAt]
+      properties:
+        horizonDays: { type: integer }
+        smapePercent: { type: [number, 'null'], description: 'sMAPE; null когда не вычисляется, не гарантированная погрешность будущего' }
+        coveragePercent: { type: number }
+        evaluatedAt: { $ref: '_shared.yaml#/components/schemas/Instant' }
+    CompanyAccuracy:
+      type: object
+      required: [available]
+      properties:
+        available: { type: boolean }
+        reason: { type: string }
+        model: { $ref: '#/components/schemas/ModelName' }
+        byHorizon:
+          type: array
+          items:
+            type: object
+            required: [horizonDays, smapePercent, maeRub, coveragePercent]
+            properties:
+              horizonDays: { type: integer }
+              smapePercent: { type: [number, 'null'] }
+              maeRub: { $ref: '_shared.yaml#/components/schemas/Money' }
+              coveragePercent: { type: number }
+        sample:
+          type: array
+          description: Факт vs прогноз на одном срезе для мини-графика
+          items:
+            type: object
+            required: [date, actual, p50]
+            properties:
+              date: { $ref: '_shared.yaml#/components/schemas/LocalDate' }
+              actual: { $ref: '_shared.yaml#/components/schemas/Money' }
+              p50: { $ref: '_shared.yaml#/components/schemas/Money' }
+              p10: { $ref: '_shared.yaml#/components/schemas/Money' }
+              p90: { $ref: '_shared.yaml#/components/schemas/Money' }
+    BacktestRq:
+      type: object
+      required: [dataset]
+      properties:
+        dataset: { type: string, enum: [SYNTH_ALL, SYNTH_COFFEE, SYNTH_WHOLESALE, SYNTH_IT, SYNTH_MANUFACTURING, ORGANIZERS] }
+        models:
+          type: array
+          items: { $ref: '#/components/schemas/ModelName' }
+        horizons:
+          type: array
+          items: { type: integer, enum: [7, 14, 30, 60] }
+        ablation: { type: boolean, default: true }
+        folds: { type: integer, minimum: 3, maximum: 24, default: 12 }
+    BacktestRunSummary:
+      type: object
+      required: [id, status, dataset, createdAt]
+      properties:
+        id: { $ref: '_shared.yaml#/components/schemas/Uuid' }
+        status: { $ref: '_shared.yaml#/components/schemas/JobStatus' }
+        dataset: { type: string }
+        bestModel: { $ref: '#/components/schemas/ModelName' }
+        durationSec: { type: integer }
+        createdAt: { $ref: '_shared.yaml#/components/schemas/Instant' }
+    MetricRow:
+      type: object
+      required: [model, horizonDays, mae, smape, mase, pinball, coverage, intervalWidth]
+      properties:
+        model: { $ref: '#/components/schemas/ModelName' }
+        horizonDays: { type: integer }
+        mae: { $ref: '_shared.yaml#/components/schemas/Money' }
+        smape: { type: [number, 'null'] }
+        mase: { type: [number, 'null'] }
+        pinball: { type: [number, 'null'], description: 'Loss statistic, not an accounting money field' }
+        coverage: { type: [number, 'null'] }
+        intervalWidth: { $ref: '_shared.yaml#/components/schemas/Money' }
+        gapPrecision: { type: [number, 'null'] }
+        gapRecall: { type: [number, 'null'] }
+        gapF1: { type: [number, 'null'] }
+        leadTimeMedianDays: { type: [number, 'null'] }
+        falseAlarmsPer30d: { type: [number, 'null'] }
+        brier: { type: [number, 'null'] }
+    BacktestReport:
+      allOf:
+        - $ref: '#/components/schemas/BacktestRunSummary'
+        - type: object
+          required: [metrics, ablation, calibration, folds]
+          properties:
+            metrics: { type: array, items: { $ref: '#/components/schemas/MetricRow' } }
+            ablation:
+              type: array
+              items:
+                type: object
+                required: [variant, mase, gapRecall, gapPrecision]
+                properties:
+                  variant: { type: string, enum: [ML_ONLY, PLUS_RECURRING, PLUS_TAXES, PLUS_INVOICES_CONTRACTS, FULL_WITH_MC] }
+                  mase: { type: number }
+                  coverage: { type: number }
+                  gapRecall: { type: number }
+                  gapPrecision: { type: number }
+            calibration:
+              type: array
+              items:
+                type: object
+                required: [bin, predicted, observed, count]
+                properties:
+                  bin: { type: number }
+                  predicted: { type: number }
+                  observed: { type: number }
+                  count: { type: integer }
+            folds:
+              type: array
+              items:
+                type: object
+                required: [cutoff, company, series]
+                properties:
+                  cutoff: { $ref: '_shared.yaml#/components/schemas/LocalDate' }
+                  company: { type: string }
+                  series:
+                    type: array
+                    items:
+                      type: object
+                      required: [date, actual, p50, p10, p90]
+                      properties:
+                        date: { $ref: '_shared.yaml#/components/schemas/LocalDate' }
+                        actual: { $ref: '_shared.yaml#/components/schemas/Money' }
+                        p10: { $ref: '_shared.yaml#/components/schemas/Money' }
+                        p50: { $ref: '_shared.yaml#/components/schemas/Money' }
+                        p90: { $ref: '_shared.yaml#/components/schemas/Money' }

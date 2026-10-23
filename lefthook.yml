@@ -1,0 +1,27 @@
+pre-commit:
+  parallel: true
+  commands:
+    identity:
+      run: node tools/git-identity.mjs
+    gitleaks:
+      run: gitleaks git --staged --redact --no-banner
+      skip_if_missing: true
+    guard:
+      run: node tools/guard.mjs --staged
+    prettier:
+      glob: "{apps,packages}/**/*.{ts,tsx,js,mjs,json,css,md}"
+      run: pnpm exec prettier --write {staged_files}
+      stage_fixed: true
+    contracts:
+      glob: "contracts/**"
+      run: node tools/hub/verify.mjs && pnpm exec redocly lint --config contracts/redocly.yaml --format=summary
+
+commit-msg:
+  commands:
+    commitlint:
+      run: pnpm exec commitlint --edit {1}
+
+pre-push:
+  commands:
+    check-changed:
+      run: node tools/check.mjs changed

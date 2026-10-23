@@ -1,0 +1,10 @@
+node_modules/
+dist/
+coverage/
+playwright-report/
+test-results/
+packages/api/src/generated/
+packages/tokens/dist/
+apps/*/dist/
+pnpm-lock.yaml
+contracts/

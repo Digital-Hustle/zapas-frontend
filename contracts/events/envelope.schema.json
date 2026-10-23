@@ -1,0 +1,19 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://zapas.app/events/envelope.schema.json",
+  "title": "EventEnvelope",
+  "description": "Конверт всех событий в Valkey Streams. Поле стрима `data` содержит этот JSON.",
+  "type": "object",
+  "required": ["eventId", "type", "version", "occurredAt", "producer", "payload"],
+  "additionalProperties": false,
+  "properties": {
+    "eventId": { "type": "string", "format": "uuid" },
+    "type": { "type": "string", "pattern": "^[a-z]+\\.[a-z-]+$" },
+    "version": { "type": "integer", "minimum": 1 },
+    "occurredAt": { "type": "string", "format": "date-time" },
+    "producer": { "type": "string", "enum": ["auth", "ledger", "planning", "forecast", "notify"] },
+    "companyId": { "type": ["string", "null"], "format": "uuid" },
+    "traceparent": { "type": "string" },
+    "payload": { "type": "object" }
+  }
+}

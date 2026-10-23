@@ -1,0 +1,37 @@
+{
+  "name": "@zapas/api",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts",
+    "./auth": "./src/generated/auth.ts",
+    "./ledger": "./src/generated/ledger.ts",
+    "./planning": "./src/generated/planning.ts",
+    "./forecast": "./src/generated/forecast.ts",
+    "./notify": "./src/generated/notify.ts"
+  },
+  "scripts": {
+    "gen": "orval --config orval.config.ts",
+    "lint": "eslint . --max-warnings 0",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run --passWithNoTests"
+  },
+  "dependencies": {
+    "@tanstack/react-query": "5.104.5",
+    "@zapas/ui": "workspace:*"
+  },
+  "peerDependencies": {
+    "react": "19.3.1"
+  },
+  "devDependencies": {
+    "@types/react": "19.3.0",
+    "@zapas/config": "workspace:*",
+    "eslint": "9.39.5",
+    "orval": "7.21.0",
+    "prettier": "3.9.10",
+    "react": "19.3.1",
+    "typescript": "5.9.3",
+    "vitest": "4.1.12"
+  }
+}

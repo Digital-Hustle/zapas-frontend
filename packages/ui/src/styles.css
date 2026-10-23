@@ -1,0 +1,27 @@
+@import "@zapas/tokens/theme.css";
+@import "@fontsource-variable/onest";
+
+/* Пакеты, классы которых должен увидеть Tailwind */
+@source "./";
+
+/* Сонер рендерит наш компонент; убираем его контейнерные отступы */
+[data-sonner-toaster] {
+  --width: min(92vw, 400px);
+}
+
+/* Полоса автозакрытия тоста: CSS, чтобы не перерисовывать React каждый кадр; пауза при наведении. */
+@keyframes zapas-toast-progress {
+  from {
+    transform: scaleX(1);
+  }
+  to {
+    transform: scaleX(0);
+  }
+}
+
+/* react-day-picker: только раскладка, цвета через классы компонента */
+.rdp-root {
+  --rdp-accent-color: var(--primary);
+  --rdp-day-height: var(--spacing-control-md);
+  --rdp-day-width: var(--spacing-control-md);
+}

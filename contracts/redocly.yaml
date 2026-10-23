@@ -1,0 +1,27 @@
+extends:
+  - recommended
+
+apis:
+  auth:
+    root: openapi/auth.yaml
+  ledger:
+    root: openapi/ledger.yaml
+  planning:
+    root: openapi/planning.yaml
+  forecast:
+    root: openapi/forecast.yaml
+  forecast-ml:
+    root: openapi/forecast-ml.yaml
+  notify:
+    root: openapi/notify.yaml
+
+rules:
+  info-license: off
+  operation-4xx-response: off
+  security-defined: error
+  operation-operationId-unique: error
+  no-unused-components: off
+  operation-summary: off
+  tag-description: off
+  no-server-example.com: off
+  no-server-trailing-slash: error
