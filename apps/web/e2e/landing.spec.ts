@@ -20,7 +20,26 @@ for (const width of [360, 768, 1440]) {
         await expect(example.locator("svg.recharts-surface")).toBeVisible();
         await expect(page.getByRole("heading", { name: "Частые вопросы" })).toBeVisible();
         await expect(page.getByRole("heading", { name: "Как это работает" })).toBeVisible();
-        await expect(page.getByRole("heading", { name: "Прогноз на 90 дней" })).toBeVisible();
+        await expect(page.getByRole("heading", { name: "Прогноз на 30 дней" })).toBeVisible();
+        await expect(example.getByText("Основной прогноз", { exact: true }).first()).toBeVisible();
+        await expect(example.getByText("P50 — медиана сценариев", { exact: true }).first()).toBeVisible();
+        await expect(page.getByText(/90 дней|XLSX|ClientBankExchange|Что если/)).toHaveCount(0);
+        const dailyData = example.getByRole("button", { name: "Данные по дням", exact: true });
+        await dailyData.focus();
+        await page.keyboard.press("Enter");
+        await expect(example.getByRole("button", { name: "Скрыть данные по дням" })).toHaveAttribute(
+          "aria-expanded",
+          "true",
+        );
+        await expect(example.getByRole("row")).toHaveCount(35);
+        const expandedAudit = await new AxeBuilder({ page }).include("#forecast-example").analyze();
+        expect(
+          expandedAudit.violations.filter(({ impact }) => impact === "serious" || impact === "critical"),
+        ).toEqual([]);
+        expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(
+          true,
+        );
+        await example.getByRole("button", { name: "Скрыть данные по дням" }).click();
         expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(
           true,
         );
@@ -34,6 +53,8 @@ for (const width of [360, 768, 1440]) {
         expect(
           audit.violations.filter(({ impact }) => impact === "serious" || impact === "critical"),
         ).toEqual([]);
+        await page.evaluate(() => window.scrollTo(0, 0));
+        await expect.poll(() => page.evaluate(() => window.scrollY)).toBe(0);
         await page.screenshot({ path: testInfo.outputPath("landing.png"), fullPage: true });
         if (width === 1440 && colorScheme === "dark") {
           await page.screenshot({ path: testInfo.outputPath("hero.png") });
