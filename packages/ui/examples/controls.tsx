@@ -4,6 +4,7 @@ import { MotionConfig } from "motion/react";
 import { Button, DatePicker, Field, Select } from "../src/index.ts";
 import "./styles.css";
 import { SelectionExample } from "./SelectionExample.tsx";
+import { ScenarioExample } from "./ScenarioExample.tsx";
 
 const options = [
   { value: "rent", label: "Аренда" },
@@ -49,6 +50,7 @@ function Controls() {
               </p>
             </section>
             <SelectionExample />
+            <ScenarioExample />
             <section
               aria-label="Состояния"
               className="border-border bg-card flex flex-col gap-4 rounded-xl border p-4 md:p-6"
