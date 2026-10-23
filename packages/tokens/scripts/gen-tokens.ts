@@ -7,7 +7,7 @@ import { format } from "prettier";
 import * as t from "../src/tokens.ts";
 
 const pkg = join(dirname(fileURLToPath(import.meta.url)), "..");
-const repo = join(pkg, "..", "..", "..");
+const repo = join(pkg, "..", "..");
 const check = process.argv.includes("--check");
 
 const px = (v: number) => `${v}px`;
