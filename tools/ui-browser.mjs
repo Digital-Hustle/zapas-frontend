@@ -3,6 +3,9 @@ import assert from "node:assert/strict";
 import { mkdir } from "node:fs/promises";
 import { resolve, join } from "node:path";
 import process from "node:process";
+import { checkSelectionControls } from "./lib/check-selection-controls.mjs";
+import { checkSlidersTabs } from "./lib/check-sliders-tabs.mjs";
+const previewUrl = process.env.UI_PREVIEW_URL ?? "http://127.0.0.1:5174/";
 const workspace = createRequire(new URL("../apps/web/package.json", import.meta.url));
 const { chromium, expect } = workspace("@playwright/test");
 const AxeBuilder = workspace("@axe-core/playwright").default;
@@ -22,13 +25,32 @@ try {
         const page = await context.newPage();
         const errors = [];
         page.on("pageerror", (e) => errors.push(e.message));
-        await page.goto("http://127.0.0.1:5174/");
+        await page.goto(previewUrl);
         if (dark) await page.getByRole("button", { name: "Тёмная тема", exact: true }).click();
+        await checkSelectionControls(page, expect);
+        await checkSlidersTabs(page, expect);
+        await page.evaluate(() =>
+          Promise.all(document.getAnimations().map((animation) => animation.finished.catch(() => {}))),
+        );
+        const fullScan = await new AxeBuilder({ page })
+          .withTags(["wcag2a", "wcag2aa", "wcag21aa", "wcag22aa"])
+          .analyze();
+        assert.deepEqual(
+          fullScan.violations.map((violation) => ({
+            id: violation.id,
+            nodes: violation.nodes.map((node) => node.target),
+          })),
+          [],
+        );
         assert.equal(await page.evaluate(() => document.documentElement.scrollWidth > innerWidth), false);
         const select = page.getByRole("combobox", { name: "Категория", exact: true });
         await select.focus();
         await select.press("Enter");
         await expect(page.getByRole("option", { name: "Аренда", exact: true })).toBeFocused();
+        await page.waitForFunction(() => {
+          const list = document.querySelector('[role="listbox"]');
+          return list && getComputedStyle(list).opacity === "1";
+        });
         assert.equal(await page.locator("#root").evaluate((el) => el.inert), true);
         const selectScan = await new AxeBuilder({ page })
           .withTags(["wcag2a", "wcag2aa", "wcag21aa", "wcag22aa"])
@@ -86,7 +108,7 @@ try {
   for (const timezoneId of ["America/Los_Angeles", "Pacific/Kiritimati"]) {
     const context = await browser.newContext({ timezoneId });
     const page = await context.newPage();
-    await page.goto("http://127.0.0.1:5174/");
+    await page.goto(previewUrl);
     await page.getByRole("button", { name: "Дата платежа", exact: true }).click();
     await page.keyboard.press("ArrowRight");
     await page.keyboard.press("Enter");
