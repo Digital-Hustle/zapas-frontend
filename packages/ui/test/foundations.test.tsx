@@ -18,7 +18,7 @@ const choose = (file: File) =>
 
 it("keeps the visible file label in its accessible name and exposes instructions as description", () => {
   render(<Upload />);
-  const button = screen.getByRole("button", { name: "Выписка CSV", exact: true });
+  const button = screen.getByRole("button", { name: "Выписка CSV" });
   expect(button).toHaveTextContent("Выписка CSV");
   expect(button).not.toHaveTextContent("Перетащите файл");
   expect(button).toHaveAccessibleDescription(/Перетащите файл или нажмите Enter/u);
