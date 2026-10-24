@@ -9,7 +9,7 @@ import { ArrowLeft, Mail } from "@zapas/ui/icons";
 import { fadeUp } from "@zapas/tokens/motion";
 import { authIssue, emailSchema, otpSchema, useAuthPort, type LoginChallenge } from "@/entities/auth-profile";
 import { useRequestCode, useVerifyCode } from "../api/mutations.ts";
-import { useCountdown } from "../model/useCountdown.ts";
+import { useCountdown } from "@/shared/lib/useCountdown.ts";
 
 const emailForm = z.object({ email: emailSchema });
 const codeForm = z.object({ code: otpSchema });
