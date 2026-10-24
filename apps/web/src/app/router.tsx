@@ -7,15 +7,22 @@ export const router = createBrowserRouter([
   {
     element: <RootLayout />,
     children: [
+      ...(import.meta.env.DEV
+        ? [
+            {
+              path: "/dev/forecast-insights",
+              lazy: () =>
+                import("@/widgets/forecast-insights").then((m) => ({ Component: m.ForecastInsightsPreview })),
+            },
+          ]
+        : []),
       {
         path: "/",
-        lazy: () =>
-          import("@/pages/landing").then((m) => ({ Component: m.LandingPage })),
+        lazy: () => import("@/pages/landing").then((m) => ({ Component: m.LandingPage })),
       },
       {
         path: "/login",
-        lazy: () =>
-          import("@/pages/login").then((m) => ({ Component: m.LoginPage })),
+        lazy: () => import("@/pages/login").then((m) => ({ Component: m.LoginPage })),
       },
       {
         element: <RequireAuth />,
