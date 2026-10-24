@@ -1,0 +1,19 @@
+{
+  "forecastId": "00000000-0000-4000-8000-000000000001",
+  "gap": {
+    "id": "00000000-0000-4000-8000-000000000001",
+    "kind": "CASH_GAP",
+    "fromDate": "2026-10-24",
+    "toDate": "2026-10-24",
+    "threshold": "125000.00",
+    "expectedMinimumBalance": "125000.00",
+    "expectedShortfall": "125000.00",
+    "probability": null,
+    "shortfallP50": null,
+    "shortfallP90": null,
+    "shortfallBasis": "CONDITIONAL_ON_BREACH",
+    "riskEstimateAvailability": "INSUFFICIENT_HISTORY"
+  },
+  "factors": [],
+  "recommendations": []
+}

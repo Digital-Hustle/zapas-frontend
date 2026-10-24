@@ -14,59 +14,77 @@ components:
       type: http
       scheme: bearer
       bearerFormat: JWT
-    serviceAuth:
-      type: http
-      scheme: bearer
-      bearerFormat: JWT
-      description: Сервисный JWT (sub=svc:<name>, aud=<target>), только /internal/**
   parameters:
     CompanyId:
       name: companyId
       in: path
       required: true
-      schema: { $ref: '#/components/schemas/Uuid' }
+      schema:
+        $ref: "#/components/schemas/Uuid"
     Page:
       name: page
       in: query
-      schema: { type: integer, minimum: 0, default: 0 }
+      schema:
+        type: integer
+        minimum: 0
+        default: 0
     Size:
       name: size
       in: query
-      schema: { type: integer, minimum: 1, maximum: 200, default: 50 }
+      schema:
+        type: integer
+        minimum: 1
+        maximum: 200
+        default: 50
     Cursor:
       name: cursor
       in: query
-      schema: { type: string, maxLength: 200 }
+      schema:
+        type: string
+        maxLength: 200
     Limit:
       name: limit
       in: query
-      schema: { type: integer, minimum: 1, maximum: 200, default: 50 }
+      schema:
+        type: integer
+        minimum: 1
+        maximum: 200
+        default: 50
     From:
       name: from
       in: query
-      schema: { $ref: '#/components/schemas/LocalDate' }
+      schema:
+        $ref: "#/components/schemas/LocalDate"
     To:
       name: to
       in: query
-      schema: { $ref: '#/components/schemas/LocalDate' }
+      schema:
+        $ref: "#/components/schemas/LocalDate"
     IdempotencyKey:
       name: Idempotency-Key
       in: header
-      schema: { $ref: '#/components/schemas/Uuid' }
+      schema:
+        $ref: "#/components/schemas/Uuid"
     IfMatch:
       name: If-Match
       in: header
       required: true
       description: Текущая версия ресурса в кавычках, например "3"
-      schema: { type: string, pattern: '^"\d+"$' }
+      schema:
+        type: string
+        pattern: ^"\d+"$
     Query:
       name: q
       in: query
-      schema: { type: string, maxLength: 100 }
+      schema:
+        type: string
+        maxLength: 100
   headers:
     RetryAfter:
       description: Секунды до повтора
-      schema: { type: integer, minimum: 0 }
+      schema:
+        type: integer
+        minimum: 0
   schemas:
     Uuid:
       type: string
@@ -74,18 +92,20 @@ components:
     LocalDate:
       type: string
       format: date
-      examples: ['2026-11-17']
+      examples:
+        - "2026-11-17"
     Instant:
       type: string
       format: date-time
     Money:
       type: string
       description: Сумма в рублях, 2 знака, точка. Арифметика только на сервере.
-      pattern: '^-?\d{1,17}\.\d{2}$'
-      examples: ['125000.00']
+      pattern: ^-?\d{1,17}\.\d{2}$
+      examples:
+        - "125000.00"
     PositiveMoney:
       type: string
-      pattern: '^\d{1,17}\.\d{2}$'
+      pattern: ^\d{1,17}\.\d{2}$
       description: Сумма > 0 (проверяется сервером)
     Probability:
       type: number
@@ -93,52 +113,105 @@ components:
       maximum: 1
     Direction:
       type: string
-      enum: [IN, OUT]
+      enum:
+        - IN
+        - OUT
     EventSource:
       type: string
-      enum: [STATEMENT, INVOICE, CONTRACT, TAX, RECURRING, MANUAL, BANK, INTEGRATION, FORECAST, SCENARIO]
+      enum:
+        - STATEMENT
+        - INVOICE
+        - CONTRACT
+        - TAX
+        - RECURRING
+        - MANUAL
+        - BANK
+        - INTEGRATION
+        - FORECAST
+        - SCENARIO
     CompanyRole:
       type: string
-      enum: [OWNER, ACCOUNTANT, VIEWER]
+      enum:
+        - OWNER
+        - ACCOUNTANT
+        - VIEWER
     TaxRegime:
       type: string
-      enum: [USN_INCOME, USN_INCOME_MINUS_EXPENSES, OSNO, AUSN, PSN]
+      enum:
+        - USN_INCOME
+        - USN_INCOME_MINUS_EXPENSES
+        - OSNO
+        - AUSN
+        - PSN
     RiskLevel:
       type: string
-      enum: [NONE, LOW, MEDIUM, HIGH]
+      enum:
+        - NONE
+        - LOW
+        - MEDIUM
+        - HIGH
     JobStatus:
       type: string
-      enum: [QUEUED, RUNNING, SUCCEEDED, FAILED]
+      enum:
+        - QUEUED
+        - RUNNING
+        - SUCCEEDED
+        - FAILED
     Job:
       type: object
-      required: [jobId, status, progress, statusUrl]
+      required:
+        - jobId
+        - status
+        - progress
+        - statusUrl
       properties:
-        jobId: { $ref: '#/components/schemas/Uuid' }
-        status: { $ref: '#/components/schemas/JobStatus' }
-        progress: { type: integer, minimum: 0, maximum: 100 }
-        statusUrl: { type: string }
-        problem: { $ref: '#/components/schemas/Problem' }
+        jobId:
+          $ref: "#/components/schemas/Uuid"
+        status:
+          $ref: "#/components/schemas/JobStatus"
+        progress:
+          type: integer
+          minimum: 0
+          maximum: 100
+        statusUrl:
+          type: string
+        problem:
+          $ref: "#/components/schemas/Problem"
     PageMeta:
       type: object
-      required: [page, size, total]
+      required:
+        - page
+        - size
+        - total
       properties:
-        page: { type: integer }
-        size: { type: integer }
-        total: { type: integer, format: int64 }
+        page:
+          type: integer
+        size:
+          type: integer
+        total:
+          type: integer
+          format: int64
     Option:
       type: object
-      required: [id, label]
+      required:
+        - id
+        - label
       properties:
-        id: { type: string }
-        label: { type: string }
-        hint: { type: string }
+        id:
+          type: string
+        label:
+          type: string
+        hint:
+          type: string
     Options:
       type: object
-      required: [items]
+      required:
+        - items
       properties:
         items:
           type: array
-          items: { $ref: '#/components/schemas/Option' }
+          items:
+            $ref: "#/components/schemas/Option"
     ErrorCode:
       type: string
       enum:
@@ -168,52 +241,106 @@ components:
         - INTERNAL
     FieldError:
       type: object
-      required: [field, code, message]
+      required:
+        - field
+        - code
+        - message
       properties:
-        field: { type: string }
-        code: { type: string }
-        message: { type: string }
+        field:
+          type: string
+        code:
+          type: string
+        message:
+          type: string
     Problem:
       type: object
-      required: [type, title, status, code, detail, traceId]
+      required:
+        - type
+        - title
+        - status
+        - code
+        - detail
+        - traceId
       properties:
-        type: { type: string, format: uri }
-        title: { type: string }
-        status: { type: integer }
-        code: { $ref: '#/components/schemas/ErrorCode' }
-        detail: { type: string, description: 'Текст для пользователя на русском' }
-        hint: { type: string }
-        instance: { type: string }
+        type:
+          type: string
+          format: uri
+        title:
+          type: string
+        status:
+          type: integer
+        code:
+          $ref: "#/components/schemas/ErrorCode"
+        detail:
+          type: string
+          description: Текст для пользователя на русском
+        hint:
+          type: string
+        instance:
+          type: string
         errors:
           type: array
-          items: { $ref: '#/components/schemas/FieldError' }
-        traceId: { type: string }
-        retryAfterSec: { type: [integer, 'null'] }
-        attemptsLeft: { type: [integer, 'null'] }
+          items:
+            $ref: "#/components/schemas/FieldError"
+        traceId:
+          type: string
+        retryAfterSec:
+          type:
+            - integer
+            - "null"
+        attemptsLeft:
+          type:
+            - integer
+            - "null"
   responses:
     BadRequest:
       description: Некорректный запрос
-      content: { application/problem+json: { schema: { $ref: '#/components/schemas/Problem' } } }
+      content:
+        application/problem+json:
+          schema:
+            $ref: "#/components/schemas/Problem"
     Unauthorized:
       description: Требуется вход
-      content: { application/problem+json: { schema: { $ref: '#/components/schemas/Problem' } } }
+      content:
+        application/problem+json:
+          schema:
+            $ref: "#/components/schemas/Problem"
     Forbidden:
       description: Недостаточно прав
-      content: { application/problem+json: { schema: { $ref: '#/components/schemas/Problem' } } }
+      content:
+        application/problem+json:
+          schema:
+            $ref: "#/components/schemas/Problem"
     NotFound:
       description: Не найдено (в том числе чужая компания)
-      content: { application/problem+json: { schema: { $ref: '#/components/schemas/Problem' } } }
+      content:
+        application/problem+json:
+          schema:
+            $ref: "#/components/schemas/Problem"
     Conflict:
       description: Конфликт версии или дубль
-      content: { application/problem+json: { schema: { $ref: '#/components/schemas/Problem' } } }
+      content:
+        application/problem+json:
+          schema:
+            $ref: "#/components/schemas/Problem"
     Unprocessable:
       description: Ошибка бизнес-валидации
-      content: { application/problem+json: { schema: { $ref: '#/components/schemas/Problem' } } }
+      content:
+        application/problem+json:
+          schema:
+            $ref: "#/components/schemas/Problem"
     TooMany:
       description: Превышен лимит
       headers:
-        Retry-After: { $ref: '#/components/headers/RetryAfter' }
-      content: { application/problem+json: { schema: { $ref: '#/components/schemas/Problem' } } }
+        Retry-After:
+          $ref: "#/components/headers/RetryAfter"
+      content:
+        application/problem+json:
+          schema:
+            $ref: "#/components/schemas/Problem"
     Unavailable:
       description: Зависимость недоступна
-      content: { application/problem+json: { schema: { $ref: '#/components/schemas/Problem' } } }
+      content:
+        application/problem+json:
+          schema:
+            $ref: "#/components/schemas/Problem"

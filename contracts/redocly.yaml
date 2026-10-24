@@ -1,20 +1,18 @@
 extends:
   - recommended
-
 apis:
+  auth-profile:
+    root: openapi/auth-profile.yaml
   auth:
     root: openapi/auth.yaml
-  ledger:
-    root: openapi/ledger.yaml
-  planning:
-    root: openapi/planning.yaml
-  forecast:
-    root: openapi/forecast.yaml
-  forecast-ml:
-    root: openapi/forecast-ml.yaml
-  notify:
-    root: openapi/notify.yaml
-
+  orchestrator:
+    root: openapi/orchestrator.openapi.yaml
+  orchestrator-internal:
+    root: openapi/orchestrator-internal.openapi.yaml
+  forecast-internal:
+    root: openapi/forecast-internal.openapi.yaml
+  preprocessor-upload:
+    root: openapi/preprocessor-upload.openapi.yaml
 rules:
   info-license: off
   operation-4xx-response: off
@@ -24,4 +22,4 @@ rules:
   operation-summary: off
   tag-description: off
   no-server-example.com: off
-  no-server-trailing-slash: error
+  no-server-trailing-slash: off

@@ -1,0 +1,3271 @@
+openapi: 3.1.0
+info:
+  title: Forecast Internal API
+  version: 1.0.0-draft
+  description:
+    "Проектная спецификация 24.10.2026: все пути/DTO определены для реализации. Это не работающий backend. См.
+    SPECIFICATION.md, включая ограничения вероятности и внешних интеграций."
+servers:
+  - url: /
+security: []
+paths:
+  /internal/v1/forecast/calculate:
+    post:
+      operationId: calculateForecast
+      tags:
+        - ForecastInternal
+      summary: Рассчитать прогноз и сценарный риск
+      description:
+        Вычисление без БД/JWT; доступ только разрешённому Orchestrator по закрытой сети. Идентификаторы forecast/backtest/job
+        передаются в служебном заголовке X-Calculation-Id/X-Job-Id, companyId/accountId уже есть в snapshot. Значения staleness/createdAt
+        на границе сохраняет/уточняет Orchestrator.
+      x-permission: INTERNAL
+      parameters:
+        - name: Idempotency-Key
+          in: header
+          required: true
+          description: UUID команды; одинаковый ключ + тот же запрос возвращает исходный результат; другой запрос →409.
+          schema:
+            $ref: "#/components/schemas/Id"
+        - name: X-Calculation-Id
+          in: header
+          required: true
+          description: ID зарезервированного результата
+          schema:
+            $ref: "#/components/schemas/Id"
+        - name: X-Job-Id
+          in: header
+          required: true
+          description: ID задания Orchestrator
+          schema:
+            $ref: "#/components/schemas/Id"
+      responses:
+        "200":
+          description: Успешно
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ForecastRs"
+          headers:
+            X-Request-Id:
+              schema:
+                type: string
+                maxLength: 100
+              description: Идентификатор запроса
+        "400":
+          description: MALFORMED_REQUEST
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+        "401":
+          description: AUTH_REQUIRED
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+        "403":
+          description: FORBIDDEN
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+        "404":
+          description: NOT_FOUND
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+        "409":
+          description: CONFLICT
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+        "422":
+          description: VALIDATION_FAILED
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+        "429":
+          description: RATE_LIMITED
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          headers:
+            Retry-After:
+              schema:
+                type: integer
+                minimum: 1
+              description: Ожидание в секундах, если известно
+        "503":
+          description: DEPENDENCY_UNAVAILABLE
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          headers:
+            Retry-After:
+              schema:
+                type: integer
+                minimum: 1
+              description: Ожидание в секундах, если известно
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ForecastSnapshot"
+  /internal/v1/forecast/backtest:
+    post:
+      operationId: evaluateBacktest
+      tags:
+        - ForecastInternal
+      summary: Проверить прогноз на исторических отсечках
+      description:
+        Вычисление без БД/JWT; доступ только разрешённому Orchestrator по закрытой сети. Идентификаторы forecast/backtest/job
+        передаются в служебном заголовке X-Calculation-Id/X-Job-Id, companyId/accountId уже есть в snapshot. Значения staleness/createdAt
+        на границе сохраняет/уточняет Orchestrator.
+      x-permission: INTERNAL
+      parameters:
+        - name: Idempotency-Key
+          in: header
+          required: true
+          description: UUID команды; одинаковый ключ + тот же запрос возвращает исходный результат; другой запрос →409.
+          schema:
+            $ref: "#/components/schemas/Id"
+        - name: X-Calculation-Id
+          in: header
+          required: true
+          description: ID зарезервированного результата
+          schema:
+            $ref: "#/components/schemas/Id"
+        - name: X-Job-Id
+          in: header
+          required: true
+          description: ID задания Orchestrator
+          schema:
+            $ref: "#/components/schemas/Id"
+      responses:
+        "200":
+          description: Успешно
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/BacktestRs"
+          headers:
+            X-Request-Id:
+              schema:
+                type: string
+                maxLength: 100
+              description: Идентификатор запроса
+        "400":
+          description: MALFORMED_REQUEST
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+        "401":
+          description: AUTH_REQUIRED
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+        "403":
+          description: FORBIDDEN
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+        "404":
+          description: NOT_FOUND
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+        "409":
+          description: CONFLICT
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+        "422":
+          description: VALIDATION_FAILED
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+        "429":
+          description: RATE_LIMITED
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          headers:
+            Retry-After:
+              schema:
+                type: integer
+                minimum: 1
+              description: Ожидание в секундах, если известно
+        "503":
+          description: DEPENDENCY_UNAVAILABLE
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          headers:
+            Retry-After:
+              schema:
+                type: integer
+                minimum: 1
+              description: Ожидание в секундах, если известно
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/BacktestSnapshot"
+  /internal/v1/forecast/recurring-detection:
+    post:
+      operationId: detectForecastRecurring
+      tags:
+        - ForecastInternal
+      summary: Выявить регулярные операции
+      description:
+        Вычисление без БД/JWT; доступ только разрешённому Orchestrator по закрытой сети. Идентификаторы forecast/backtest/job
+        передаются в служебном заголовке X-Calculation-Id/X-Job-Id, companyId/accountId уже есть в snapshot. Значения staleness/createdAt
+        на границе сохраняет/уточняет Orchestrator.
+      x-permission: INTERNAL
+      parameters:
+        - name: Idempotency-Key
+          in: header
+          required: true
+          description: UUID команды; одинаковый ключ + тот же запрос возвращает исходный результат; другой запрос →409.
+          schema:
+            $ref: "#/components/schemas/Id"
+        - name: X-Calculation-Id
+          in: header
+          required: true
+          description: ID зарезервированного результата
+          schema:
+            $ref: "#/components/schemas/Id"
+        - name: X-Job-Id
+          in: header
+          required: true
+          description: ID задания Orchestrator
+          schema:
+            $ref: "#/components/schemas/Id"
+      responses:
+        "200":
+          description: Успешно
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RecurringDetectionResult"
+          headers:
+            X-Request-Id:
+              schema:
+                type: string
+                maxLength: 100
+              description: Идентификатор запроса
+        "400":
+          description: MALFORMED_REQUEST
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+        "401":
+          description: AUTH_REQUIRED
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+        "403":
+          description: FORBIDDEN
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+        "404":
+          description: NOT_FOUND
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+        "409":
+          description: CONFLICT
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+        "422":
+          description: VALIDATION_FAILED
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+        "429":
+          description: RATE_LIMITED
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          headers:
+            Retry-After:
+              schema:
+                type: integer
+                minimum: 1
+              description: Ожидание в секундах, если известно
+        "503":
+          description: DEPENDENCY_UNAVAILABLE
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          headers:
+            Retry-After:
+              schema:
+                type: integer
+                minimum: 1
+              description: Ожидание в секундах, если известно
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/RecurringDetectionInput"
+components:
+  schemas:
+    Id:
+      type: string
+      format: uuid
+    Date:
+      type: string
+      format: date
+    Instant:
+      type: string
+      format: date-time
+    Money:
+      type: string
+      description: Рубли с двумя десятичными знаками; отрицательные допустимы для остатка/ошибки. Все вычисления decimal.
+      pattern: ^-?(0|[1-9][0-9]{0,16})\.[0-9]{2}$
+      examples:
+        - "125000.00"
+    PositiveMoney:
+      type: string
+      description: Сумма больше нуля; дополнительная decimal-валидация >0.
+      pattern: ^(0|[1-9][0-9]{0,16})\.[0-9]{2}$
+      not:
+        const: "0.00"
+      examples:
+        - "125000.00"
+    Probability:
+      type: number
+      minimum: 0
+      maximum: 1
+    Role:
+      type: string
+      enum:
+        - OWNER
+        - ACCOUNTANT
+        - VIEWER
+    Direction:
+      type: string
+      enum:
+        - IN
+        - OUT
+    LegalForm:
+      type: string
+      enum:
+        - OOO
+        - IP
+        - OTHER
+    CategorySource:
+      type: string
+      enum:
+        - RULE
+        - COUNTERPARTY
+        - USER
+        - OTHER
+    ImportStatus:
+      type: string
+      enum:
+        - RECEIVING
+        - STAGING
+        - COMMITTED
+        - REJECTED
+        - ABORTED
+    IssueSeverity:
+      type: string
+      enum:
+        - INFO
+        - WARNING
+        - ERROR
+    DataQuality:
+      type: string
+      enum:
+        - GOOD
+        - LIMITED
+        - INSUFFICIENT
+    Completeness:
+      type: string
+      enum:
+        - CONFIRMED_COMPLETE
+        - UNKNOWN
+    PaymentSource:
+      type: string
+      enum:
+        - MANUAL
+        - INVOICE
+        - TAX
+        - CONTRACT
+    PlanStatus:
+      type: string
+      enum:
+        - OPEN
+        - PARTIALLY_SETTLED
+        - SETTLED
+        - CANCELLED
+    PlanRelation:
+      type: string
+      enum:
+        - ADDITIONAL
+        - REPLACES_RECURRING
+        - REPLACES_BASELINE
+    Frequency:
+      type: string
+      enum:
+        - WEEKLY
+        - MONTHLY
+    PatternStatus:
+      type: string
+      enum:
+        - DETECTED
+        - CONFIRMED
+        - EXCLUDED
+    BusinessDayRule:
+      type: string
+      enum:
+        - NONE
+        - FOLLOWING
+    JobType:
+      type: string
+      enum:
+        - FORECAST
+        - BACKTEST
+        - DETECT_RECURRING
+    JobStatus:
+      type: string
+      enum:
+        - QUEUED
+        - RUNNING
+        - SUCCEEDED
+        - FAILED
+        - CANCELLED
+    RiskAvailability:
+      type: string
+      enum:
+        - AVAILABLE
+        - INSUFFICIENT_HISTORY
+        - INPUT_INCOMPLETE
+    RiskMethod:
+      type: string
+      enum:
+        - HISTORICAL_TRAJECTORY_BOOTSTRAP
+    AlertType:
+      type: string
+      enum:
+        - CASH_GAP
+        - BUFFER_BREACH
+        - OVERDUE_PLAN
+        - STALE_FORECAST
+        - DATA_QUALITY
+    ForecastScope:
+      type: string
+      enum:
+        - HISTORY_ONLY
+        - WITH_KNOWN_PLANS
+    ExternalSource:
+      type: string
+      enum:
+        - ACCOUNTING_EXPORT
+        - INVOICE_REGISTER
+        - TAX_REGISTER
+    WarningCode:
+      type: string
+      enum:
+        - SHORT_HISTORY
+        - MISSING_DATA
+        - BALANCE_MISMATCH
+        - NO_BASELINE_OBSERVATIONS
+        - UNMATCHED_PLAN
+        - ASSUMED_FIXED_PLAN_DATES
+        - RISK_UNAVAILABLE
+        - ESTIMATED_PROBABILITY
+    DailyStatus:
+      type: string
+      enum:
+        - OBSERVED
+        - ZERO_CONFIRMED
+        - MISSING
+    Algorithm:
+      type: string
+      enum:
+        - WEEKDAY_MEAN_V1
+    BacktestStatus:
+      type: string
+      enum:
+        - PARTIAL
+        - COMPLETE
+    RecommendationKind:
+      type: string
+      enum:
+        - REVIEW_PLAN_DATE
+        - REQUEST_PAYMENT
+        - REVIEW_VARIABLE_COSTS
+    Staleness:
+      type: string
+      enum:
+        - CURRENT
+        - STALE
+    ErrorCode:
+      type: string
+      enum:
+        - VALIDATION_FAILED
+        - MALFORMED_REQUEST
+        - AUTH_REQUIRED
+        - FORBIDDEN
+        - NOT_FOUND
+        - CONFLICT
+        - VERSION_CONFLICT
+        - PRECONDITION_REQUIRED
+        - IDEMPOTENCY_CONFLICT
+        - IMPORT_REJECTED
+        - IMPORT_INCOMPLETE
+        - UNSUPPORTED_MEDIA_TYPE
+        - PAYLOAD_TOO_LARGE
+        - DUPLICATE_CONFLICT
+        - INSUFFICIENT_HISTORY
+        - BALANCE_ANCHOR_REQUIRED
+        - UNRESOLVED_PLAN
+        - DEPENDENCY_UNAVAILABLE
+        - RATE_LIMITED
+        - JOB_NOT_CANCELLABLE
+        - ACCOUNT_ARCHIVED
+        - ALLOCATION_EXCEEDS_AMOUNT
+    FieldError:
+      type: object
+      additionalProperties: false
+      properties:
+        field:
+          type: string
+          maxLength: 200
+        code:
+          type: string
+          maxLength: 100
+        message:
+          type: string
+          maxLength: 500
+      required:
+        - field
+        - code
+        - message
+    Problem:
+      type: object
+      additionalProperties: false
+      properties:
+        type:
+          type: string
+          format: uri
+        title:
+          type: string
+          maxLength: 100
+        status:
+          type: integer
+          minimum: 400
+          maximum: 599
+        code:
+          $ref: "#/components/schemas/ErrorCode"
+        detail:
+          type: string
+          maxLength: 2000
+        traceId:
+          type: string
+          maxLength: 100
+        errors:
+          type: array
+          items:
+            $ref: "#/components/schemas/FieldError"
+        retryAfterSec:
+          anyOf:
+            - type: integer
+              minimum: 1
+            - type: "null"
+        resourceId:
+          anyOf:
+            - $ref: "#/components/schemas/Id"
+            - type: "null"
+      required:
+        - type
+        - title
+        - status
+        - code
+        - detail
+        - traceId
+        - errors
+        - retryAfterSec
+        - resourceId
+    PageMeta:
+      type: object
+      additionalProperties: false
+      properties:
+        page:
+          type: integer
+          minimum: 0
+        size:
+          type: integer
+          minimum: 1
+          maximum: 200
+        total:
+          type: integer
+          minimum: 0
+        hasNext:
+          type: boolean
+      required:
+        - page
+        - size
+        - total
+        - hasNext
+    Warning:
+      type: object
+      additionalProperties: false
+      properties:
+        code:
+          $ref: "#/components/schemas/WarningCode"
+        message:
+          type: string
+          maxLength: 1000
+        date:
+          anyOf:
+            - $ref: "#/components/schemas/Date"
+            - type: "null"
+      required:
+        - code
+        - message
+        - date
+    Permissions:
+      type: object
+      additionalProperties: false
+      properties:
+        canEditCompany:
+          type: boolean
+        canManageMembers:
+          type: boolean
+        canImport:
+          type: boolean
+        canEditPayments:
+          type: boolean
+        canManagePlans:
+          type: boolean
+        canRunForecast:
+          type: boolean
+        canRunBacktest:
+          type: boolean
+      required:
+        - canEditCompany
+        - canManageMembers
+        - canImport
+        - canEditPayments
+        - canManagePlans
+        - canRunForecast
+        - canRunBacktest
+    CapabilitiesRs:
+      type: object
+      additionalProperties: false
+      properties:
+        apiVersion:
+          type: string
+          maxLength: 30
+        currency:
+          const: RUB
+          type: string
+        forecastHorizons:
+          type: array
+          items:
+            type: integer
+            enum:
+              - 30
+        riskMethods:
+          type: array
+          items:
+            $ref: "#/components/schemas/RiskMethod"
+        maxCsvBytes:
+          type: integer
+          minimum: 1
+        maxImportRows:
+          type: integer
+          minimum: 1
+        maxPageSize:
+          type: integer
+          minimum: 1
+      required:
+        - apiVersion
+        - currency
+        - forecastHorizons
+        - riskMethods
+        - maxCsvBytes
+        - maxImportRows
+        - maxPageSize
+    CreateCompanyRq:
+      type: object
+      additionalProperties: false
+      properties: &id001
+        name: &id002
+          type: string
+          minLength: 1
+          maxLength: 200
+        legalForm: &id003
+          $ref: "#/components/schemas/LegalForm"
+        inn: &id004
+          anyOf:
+            - type: string
+              pattern: ^[0-9]{10}([0-9]{2})?$
+            - type: "null"
+        kpp: &id005
+          anyOf:
+            - type: string
+              pattern: ^[0-9]{9}$
+            - type: "null"
+        timezone: &id006
+          type: string
+          enum:
+            - Europe/Moscow
+      required:
+        - name
+        - legalForm
+        - inn
+        - kpp
+        - timezone
+    UpdateCompanyRq:
+      type: object
+      additionalProperties: false
+      properties: *id001
+      required:
+        - name
+        - legalForm
+        - inn
+        - kpp
+        - timezone
+    CompanyRs:
+      type: object
+      additionalProperties: false
+      properties:
+        id:
+          $ref: "#/components/schemas/Id"
+        name: *id002
+        legalForm: *id003
+        inn: *id004
+        kpp: *id005
+        timezone: *id006
+        ownerUserId:
+          $ref: "#/components/schemas/Id"
+        myRole:
+          $ref: "#/components/schemas/Role"
+        permissions:
+          $ref: "#/components/schemas/Permissions"
+        archived:
+          type: boolean
+        dataVersion:
+          type: integer
+          minimum: 0
+        version:
+          type: integer
+          minimum: 1
+        createdAt:
+          $ref: "#/components/schemas/Instant"
+        updatedAt:
+          $ref: "#/components/schemas/Instant"
+      required:
+        - id
+        - name
+        - legalForm
+        - inn
+        - kpp
+        - timezone
+        - ownerUserId
+        - myRole
+        - permissions
+        - archived
+        - dataVersion
+        - version
+        - createdAt
+        - updatedAt
+    MemberRs:
+      type: object
+      additionalProperties: false
+      properties:
+        userId:
+          $ref: "#/components/schemas/Id"
+        role:
+          $ref: "#/components/schemas/Role"
+        joinedAt:
+          $ref: "#/components/schemas/Instant"
+        version:
+          type: integer
+          minimum: 1
+      required:
+        - userId
+        - role
+        - joinedAt
+        - version
+    AddMemberRq:
+      type: object
+      additionalProperties: false
+      properties:
+        userId:
+          $ref: "#/components/schemas/Id"
+        role:
+          type: string
+          enum:
+            - ACCOUNTANT
+            - VIEWER
+      required:
+        - userId
+        - role
+    UpdateMemberRq:
+      type: object
+      additionalProperties: false
+      properties:
+        role:
+          type: string
+          enum:
+            - ACCOUNTANT
+            - VIEWER
+      required:
+        - role
+    CreateAccountRq:
+      type: object
+      additionalProperties: false
+      properties: &id007
+        name: &id008
+          type: string
+          minLength: 1
+          maxLength: 100
+        bankName: &id009
+          anyOf:
+            - type: string
+              maxLength: 200
+            - type: "null"
+        accountNumber: &id010
+          anyOf:
+            - type: string
+              pattern: ^[0-9]{20}$
+            - type: "null"
+        externalCompanyId: &id011
+          anyOf:
+            - type: string
+              maxLength: 100
+            - type: "null"
+      required:
+        - name
+        - bankName
+        - accountNumber
+        - externalCompanyId
+    UpdateAccountRq:
+      type: object
+      additionalProperties: false
+      properties: *id007
+      required:
+        - name
+        - bankName
+        - accountNumber
+        - externalCompanyId
+    AccountRs:
+      type: object
+      additionalProperties: false
+      properties:
+        id:
+          $ref: "#/components/schemas/Id"
+        companyId:
+          $ref: "#/components/schemas/Id"
+        name: *id008
+        bankName: *id009
+        accountNumber: *id010
+        externalCompanyId: *id011
+        currency:
+          type: string
+          const: RUB
+        archived:
+          type: boolean
+        latestBalance:
+          anyOf:
+            - $ref: "#/components/schemas/Money"
+            - type: "null"
+        latestBalanceDate:
+          anyOf:
+            - $ref: "#/components/schemas/Date"
+            - type: "null"
+        version:
+          type: integer
+          minimum: 1
+      required:
+        - id
+        - companyId
+        - name
+        - bankName
+        - accountNumber
+        - externalCompanyId
+        - currency
+        - archived
+        - latestBalance
+        - latestBalanceDate
+        - version
+    BalanceAnchorRq:
+      type: object
+      additionalProperties: false
+      properties:
+        date:
+          $ref: "#/components/schemas/Date"
+        balance:
+          $ref: "#/components/schemas/Money"
+        reason:
+          type: string
+          minLength: 1
+          maxLength: 500
+      required:
+        - date
+        - balance
+        - reason
+    BalanceAnchorRs:
+      type: object
+      additionalProperties: false
+      properties:
+        id:
+          $ref: "#/components/schemas/Id"
+        accountId:
+          $ref: "#/components/schemas/Id"
+        date:
+          $ref: "#/components/schemas/Date"
+        balance:
+          $ref: "#/components/schemas/Money"
+        source:
+          type: string
+          enum:
+            - STATEMENT
+            - MANUAL
+        reason:
+          anyOf:
+            - type: string
+              maxLength: 500
+            - type: "null"
+        createdAt:
+          $ref: "#/components/schemas/Instant"
+      required:
+        - id
+        - accountId
+        - date
+        - balance
+        - source
+        - reason
+        - createdAt
+    CategoryRs:
+      type: object
+      additionalProperties: false
+      properties:
+        code:
+          type: string
+          pattern: ^[A-Z][A-Z0-9_]{1,63}$
+        name:
+          type: string
+          maxLength: 100
+        directions:
+          type: array
+          items:
+            $ref: "#/components/schemas/Direction"
+        system:
+          type: boolean
+      required:
+        - code
+        - name
+        - directions
+        - system
+    PaymentRs:
+      type: object
+      additionalProperties: false
+      properties:
+        id:
+          $ref: "#/components/schemas/Id"
+        companyId:
+          $ref: "#/components/schemas/Id"
+        accountId:
+          $ref: "#/components/schemas/Id"
+        importId:
+          $ref: "#/components/schemas/Id"
+        externalOperationId:
+          anyOf:
+            - type: string
+              maxLength: 100
+            - type: "null"
+        operationDate:
+          $ref: "#/components/schemas/Date"
+        amount:
+          $ref: "#/components/schemas/PositiveMoney"
+        direction:
+          $ref: "#/components/schemas/Direction"
+        counterpartyInn:
+          anyOf:
+            - type: string
+              maxLength: 12
+            - type: "null"
+        counterpartyName:
+          anyOf:
+            - type: string
+              maxLength: 500
+            - type: "null"
+        purpose:
+          anyOf:
+            - type: string
+              maxLength: 2000
+            - type: "null"
+        categoryCode:
+          type: string
+          maxLength: 64
+        categorySource:
+          $ref: "#/components/schemas/CategorySource"
+        ruleVersion:
+          anyOf:
+            - type: string
+              maxLength: 100
+            - type: "null"
+        balanceEod:
+          anyOf:
+            - $ref: "#/components/schemas/Money"
+            - type: "null"
+        allocatedAmount:
+          $ref: "#/components/schemas/Money"
+        version:
+          type: integer
+          minimum: 1
+        createdAt:
+          $ref: "#/components/schemas/Instant"
+      required:
+        - id
+        - companyId
+        - accountId
+        - importId
+        - externalOperationId
+        - operationDate
+        - amount
+        - direction
+        - counterpartyInn
+        - counterpartyName
+        - purpose
+        - categoryCode
+        - categorySource
+        - ruleVersion
+        - balanceEod
+        - allocatedAmount
+        - version
+        - createdAt
+    UpdateCategoryRq:
+      type: object
+      additionalProperties: false
+      properties:
+        categoryCode:
+          type: string
+          maxLength: 64
+      required:
+        - categoryCode
+    PaymentCategoryChange:
+      type: object
+      additionalProperties: false
+      properties:
+        paymentId:
+          $ref: "#/components/schemas/Id"
+        expectedVersion:
+          type: integer
+          minimum: 1
+      required:
+        - paymentId
+        - expectedVersion
+    BulkCategoryRq:
+      type: object
+      additionalProperties: false
+      properties:
+        categoryCode:
+          type: string
+          maxLength: 64
+        payments:
+          type: array
+          items:
+            $ref: "#/components/schemas/PaymentCategoryChange"
+          minItems: 1
+          maxItems: 200
+      required:
+        - categoryCode
+        - payments
+    CounterpartyRs:
+      type: object
+      additionalProperties: false
+      properties:
+        key:
+          type: string
+          maxLength: 150
+        inn:
+          anyOf:
+            - type: string
+              maxLength: 12
+            - type: "null"
+        name:
+          anyOf:
+            - type: string
+              maxLength: 500
+            - type: "null"
+      required:
+        - key
+        - inn
+        - name
+    ImportIssueRs:
+      type: object
+      additionalProperties: false
+      properties:
+        id:
+          $ref: "#/components/schemas/Id"
+        severity:
+          $ref: "#/components/schemas/IssueSeverity"
+        code:
+          type: string
+          maxLength: 100
+        rowNumber:
+          anyOf:
+            - type: integer
+              minimum: 1
+            - type: "null"
+        field:
+          anyOf:
+            - type: string
+              maxLength: 100
+            - type: "null"
+        message:
+          type: string
+          maxLength: 1000
+      required:
+        - id
+        - severity
+        - code
+        - rowNumber
+        - field
+        - message
+    ImportRs:
+      type: object
+      additionalProperties: false
+      properties:
+        id:
+          $ref: "#/components/schemas/Id"
+        companyId:
+          $ref: "#/components/schemas/Id"
+        accountId:
+          $ref: "#/components/schemas/Id"
+        status:
+          $ref: "#/components/schemas/ImportStatus"
+        fileName:
+          type: string
+          maxLength: 200
+        fileSha256:
+          type: string
+          pattern: ^[a-f0-9]{64}$
+        totalRows:
+          type: integer
+          minimum: 0
+        acceptedRows:
+          type: integer
+          minimum: 0
+        rejectedRows:
+          type: integer
+          minimum: 0
+        duplicateRows:
+          type: integer
+          minimum: 0
+        warningCount:
+          type: integer
+          minimum: 0
+        fromDate:
+          anyOf:
+            - $ref: "#/components/schemas/Date"
+            - type: "null"
+        toDate:
+          anyOf:
+            - $ref: "#/components/schemas/Date"
+            - type: "null"
+        createdAt:
+          $ref: "#/components/schemas/Instant"
+        completedAt:
+          anyOf:
+            - $ref: "#/components/schemas/Instant"
+            - type: "null"
+        dataVersion:
+          anyOf:
+            - type: integer
+              minimum: 0
+            - type: "null"
+      required:
+        - id
+        - companyId
+        - accountId
+        - status
+        - fileName
+        - fileSha256
+        - totalRows
+        - acceptedRows
+        - rejectedRows
+        - duplicateRows
+        - warningCount
+        - fromDate
+        - toDate
+        - createdAt
+        - completedAt
+        - dataVersion
+    CompletenessRangeRq:
+      type: object
+      additionalProperties: false
+      properties:
+        fromDate:
+          $ref: "#/components/schemas/Date"
+        toDate:
+          $ref: "#/components/schemas/Date"
+        completeness:
+          $ref: "#/components/schemas/Completeness"
+        reason:
+          type: string
+          minLength: 1
+          maxLength: 500
+      required:
+        - fromDate
+        - toDate
+        - completeness
+        - reason
+    CompletenessRangeRs:
+      type: object
+      additionalProperties: false
+      properties:
+        id:
+          $ref: "#/components/schemas/Id"
+        accountId:
+          $ref: "#/components/schemas/Id"
+        fromDate:
+          $ref: "#/components/schemas/Date"
+        toDate:
+          $ref: "#/components/schemas/Date"
+        completeness:
+          $ref: "#/components/schemas/Completeness"
+        reason:
+          type: string
+          maxLength: 500
+        createdAt:
+          $ref: "#/components/schemas/Instant"
+      required:
+        - id
+        - accountId
+        - fromDate
+        - toDate
+        - completeness
+        - reason
+        - createdAt
+    DailyActualRs:
+      type: object
+      additionalProperties: false
+      properties:
+        date:
+          $ref: "#/components/schemas/Date"
+        inflow:
+          anyOf:
+            - $ref: "#/components/schemas/Money"
+            - type: "null"
+        outflow:
+          anyOf:
+            - $ref: "#/components/schemas/Money"
+            - type: "null"
+        balanceEod:
+          anyOf:
+            - $ref: "#/components/schemas/Money"
+            - type: "null"
+        status:
+          $ref: "#/components/schemas/DailyStatus"
+        paymentCount:
+          type: integer
+          minimum: 0
+        balanceMismatch:
+          type: boolean
+      required:
+        - date
+        - inflow
+        - outflow
+        - balanceEod
+        - status
+        - paymentCount
+        - balanceMismatch
+    DataQualityRs:
+      type: object
+      additionalProperties: false
+      properties:
+        accountId:
+          $ref: "#/components/schemas/Id"
+        fromDate:
+          anyOf:
+            - $ref: "#/components/schemas/Date"
+            - type: "null"
+        toDate:
+          anyOf:
+            - $ref: "#/components/schemas/Date"
+            - type: "null"
+        quality:
+          $ref: "#/components/schemas/DataQuality"
+        completeDayCount:
+          type: integer
+          minimum: 0
+        missingDayCount:
+          type: integer
+          minimum: 0
+        balanceMismatchCount:
+          type: integer
+          minimum: 0
+        emptyPurposeCount:
+          type: integer
+          minimum: 0
+        warnings:
+          type: array
+          items:
+            $ref: "#/components/schemas/Warning"
+      required:
+        - accountId
+        - fromDate
+        - toDate
+        - quality
+        - completeDayCount
+        - missingDayCount
+        - balanceMismatchCount
+        - emptyPurposeCount
+        - warnings
+    Schedule:
+      type: object
+      additionalProperties: false
+      properties:
+        frequency:
+          $ref: "#/components/schemas/Frequency"
+        weekday:
+          anyOf:
+            - type: integer
+              minimum: 1
+              maximum: 7
+            - type: "null"
+        dayOfMonth:
+          anyOf:
+            - type: integer
+              minimum: 1
+              maximum: 31
+            - type: "null"
+        businessDayRule:
+          $ref: "#/components/schemas/BusinessDayRule"
+      required:
+        - frequency
+        - weekday
+        - dayOfMonth
+        - businessDayRule
+    RecurringPatternRs:
+      type: object
+      additionalProperties: false
+      properties:
+        id:
+          $ref: "#/components/schemas/Id"
+        accountId:
+          $ref: "#/components/schemas/Id"
+        direction:
+          $ref: "#/components/schemas/Direction"
+        categoryCode:
+          type: string
+          maxLength: 64
+        counterpartyKey:
+          anyOf:
+            - type: string
+              maxLength: 150
+            - type: "null"
+        status:
+          $ref: "#/components/schemas/PatternStatus"
+        schedule:
+          $ref: "#/components/schemas/Schedule"
+        amount:
+          $ref: "#/components/schemas/PositiveMoney"
+        observations:
+          type: integer
+          minimum: 0
+        firstSeen:
+          $ref: "#/components/schemas/Date"
+        lastSeen:
+          $ref: "#/components/schemas/Date"
+        inputDataVersion:
+          type: integer
+          minimum: 0
+        detectorVersion:
+          type: string
+          maxLength: 100
+        version:
+          type: integer
+          minimum: 1
+      required:
+        - id
+        - accountId
+        - direction
+        - categoryCode
+        - counterpartyKey
+        - status
+        - schedule
+        - amount
+        - observations
+        - firstSeen
+        - lastSeen
+        - inputDataVersion
+        - detectorVersion
+        - version
+    UpdateRecurringRq:
+      type: object
+      additionalProperties: false
+      properties:
+        status:
+          $ref: "#/components/schemas/PatternStatus"
+        schedule:
+          $ref: "#/components/schemas/Schedule"
+        amount:
+          $ref: "#/components/schemas/PositiveMoney"
+      required:
+        - status
+        - schedule
+        - amount
+    DetectRecurringRq:
+      type: object
+      additionalProperties: false
+      properties:
+        accountId:
+          $ref: "#/components/schemas/Id"
+        asOfDate:
+          $ref: "#/components/schemas/Date"
+      required:
+        - accountId
+        - asOfDate
+    CreateExpectedPaymentRq:
+      type: object
+      additionalProperties: false
+      properties: &id012
+        accountId: &id013
+          $ref: "#/components/schemas/Id"
+        title: &id014
+          type: string
+          minLength: 1
+          maxLength: 200
+        direction: &id015
+          $ref: "#/components/schemas/Direction"
+        amount: &id016
+          $ref: "#/components/schemas/PositiveMoney"
+        dueDate: &id017
+          $ref: "#/components/schemas/Date"
+        categoryCode: &id018
+          type: string
+          maxLength: 64
+        counterpartyKey: &id019
+          anyOf:
+            - type: string
+              maxLength: 150
+            - type: "null"
+        note: &id020
+          anyOf:
+            - type: string
+              maxLength: 2000
+            - type: "null"
+        relation: &id021
+          $ref: "#/components/schemas/PlanRelation"
+        recurringPatternId: &id022
+          anyOf:
+            - $ref: "#/components/schemas/Id"
+            - type: "null"
+        baselineCounterpartyKey: &id023
+          anyOf:
+            - type: string
+              maxLength: 150
+            - type: "null"
+      required:
+        - accountId
+        - title
+        - direction
+        - amount
+        - dueDate
+        - categoryCode
+        - counterpartyKey
+        - note
+        - relation
+        - recurringPatternId
+        - baselineCounterpartyKey
+    UpdateExpectedPaymentRq:
+      type: object
+      additionalProperties: false
+      properties: *id012
+      required:
+        - accountId
+        - title
+        - direction
+        - amount
+        - dueDate
+        - categoryCode
+        - counterpartyKey
+        - note
+        - relation
+        - recurringPatternId
+        - baselineCounterpartyKey
+    SourceDocument:
+      type: object
+      additionalProperties: false
+      properties:
+        externalSystem:
+          type: string
+          minLength: 1
+          maxLength: 100
+        externalId:
+          type: string
+          minLength: 1
+          maxLength: 200
+        documentNumber:
+          anyOf:
+            - type: string
+              maxLength: 100
+            - type: "null"
+        issuedDate:
+          anyOf:
+            - $ref: "#/components/schemas/Date"
+            - type: "null"
+      required:
+        - externalSystem
+        - externalId
+        - documentNumber
+        - issuedDate
+    ExpectedPaymentRs:
+      type: object
+      additionalProperties: false
+      properties:
+        id:
+          $ref: "#/components/schemas/Id"
+        companyId:
+          $ref: "#/components/schemas/Id"
+        accountId: *id013
+        title: *id014
+        direction: *id015
+        amount: *id016
+        dueDate: *id017
+        categoryCode: *id018
+        counterpartyKey: *id019
+        note: *id020
+        relation: *id021
+        recurringPatternId: *id022
+        baselineCounterpartyKey: *id023
+        source:
+          $ref: "#/components/schemas/PaymentSource"
+        sourceDocument:
+          anyOf:
+            - $ref: "#/components/schemas/SourceDocument"
+            - type: "null"
+        status:
+          $ref: "#/components/schemas/PlanStatus"
+        settledAmount:
+          $ref: "#/components/schemas/Money"
+        remainingAmount:
+          $ref: "#/components/schemas/Money"
+        overdue:
+          type: boolean
+        knownAt:
+          $ref: "#/components/schemas/Instant"
+        createdAt:
+          $ref: "#/components/schemas/Instant"
+        updatedAt:
+          $ref: "#/components/schemas/Instant"
+        version:
+          type: integer
+          minimum: 1
+      required:
+        - id
+        - companyId
+        - accountId
+        - title
+        - direction
+        - amount
+        - dueDate
+        - categoryCode
+        - counterpartyKey
+        - note
+        - relation
+        - recurringPatternId
+        - baselineCounterpartyKey
+        - source
+        - sourceDocument
+        - status
+        - settledAmount
+        - remainingAmount
+        - overdue
+        - knownAt
+        - createdAt
+        - updatedAt
+        - version
+      description:
+        settledAmount + remainingAmount = amount для неотменённого плана; отменённый remainingAmount=0. Планы не
+        являются фактом.
+    ExternalExpectedPaymentItem:
+      type: object
+      additionalProperties: false
+      properties:
+        accountId: *id013
+        title: *id014
+        direction: *id015
+        amount: *id016
+        dueDate: *id017
+        categoryCode: *id018
+        counterpartyKey: *id019
+        note: *id020
+        relation: *id021
+        recurringPatternId: *id022
+        baselineCounterpartyKey: *id023
+        source:
+          type: string
+          enum:
+            - INVOICE
+            - TAX
+            - CONTRACT
+        sourceDocument:
+          $ref: "#/components/schemas/SourceDocument"
+        expectedVersion:
+          anyOf:
+            - type: integer
+              minimum: 1
+            - type: "null"
+      required:
+        - accountId
+        - title
+        - direction
+        - amount
+        - dueDate
+        - categoryCode
+        - counterpartyKey
+        - note
+        - relation
+        - recurringPatternId
+        - baselineCounterpartyKey
+        - source
+        - sourceDocument
+        - expectedVersion
+    ImportExpectedPaymentsRq:
+      type: object
+      additionalProperties: false
+      properties:
+        externalSource:
+          $ref: "#/components/schemas/ExternalSource"
+        items:
+          type: array
+          items:
+            $ref: "#/components/schemas/ExternalExpectedPaymentItem"
+          minItems: 1
+          maxItems: 500
+      required:
+        - externalSource
+        - items
+    ExpectedPaymentImportRs:
+      type: object
+      additionalProperties: false
+      properties:
+        createdCount:
+          type: integer
+          minimum: 0
+        updatedCount:
+          type: integer
+          minimum: 0
+        unchangedCount:
+          type: integer
+          minimum: 0
+        items:
+          type: array
+          items:
+            $ref: "#/components/schemas/ExpectedPaymentRs"
+      required:
+        - createdCount
+        - updatedCount
+        - unchangedCount
+        - items
+    AllocationRq:
+      type: object
+      additionalProperties: false
+      properties:
+        paymentId:
+          $ref: "#/components/schemas/Id"
+        amount:
+          $ref: "#/components/schemas/PositiveMoney"
+      required:
+        - paymentId
+        - amount
+    AllocationRs:
+      type: object
+      additionalProperties: false
+      properties:
+        id:
+          $ref: "#/components/schemas/Id"
+        expectedPaymentId:
+          $ref: "#/components/schemas/Id"
+        paymentId:
+          $ref: "#/components/schemas/Id"
+        amount:
+          $ref: "#/components/schemas/PositiveMoney"
+        createdAt:
+          $ref: "#/components/schemas/Instant"
+      required:
+        - id
+        - expectedPaymentId
+        - paymentId
+        - amount
+        - createdAt
+    CancelRq:
+      type: object
+      additionalProperties: false
+      properties:
+        reason:
+          type: string
+          minLength: 1
+          maxLength: 500
+      required:
+        - reason
+    ForecastSettings:
+      type: object
+      additionalProperties: false
+      properties:
+        windowWeeks:
+          type: integer
+          enum:
+            - 8
+            - 10
+            - 12
+        horizonDays:
+          type: integer
+          enum:
+            - 30
+        bufferAmount:
+          allOf:
+            - $ref: "#/components/schemas/Money"
+            - not:
+                pattern: ^-
+        scenarioCount:
+          type: integer
+          minimum: 100
+          maximum: 5000
+        minCalibrationOrigins:
+          type: integer
+          minimum: 12
+          maximum: 100
+        calibrationStepDays:
+          type: integer
+          enum:
+            - 7
+        algorithm:
+          $ref: "#/components/schemas/Algorithm"
+      required:
+        - windowWeeks
+        - horizonDays
+        - bufferAmount
+        - scenarioCount
+        - minCalibrationOrigins
+        - calibrationStepDays
+        - algorithm
+    SettingsRs:
+      type: object
+      additionalProperties: false
+      properties:
+        accountId:
+          $ref: "#/components/schemas/Id"
+        forecast:
+          $ref: "#/components/schemas/ForecastSettings"
+        autoRecalculate:
+          type: boolean
+        version:
+          type: integer
+          minimum: 1
+      required:
+        - accountId
+        - forecast
+        - autoRecalculate
+        - version
+    UpdateSettingsRq:
+      type: object
+      additionalProperties: false
+      properties:
+        forecast:
+          $ref: "#/components/schemas/ForecastSettings"
+        autoRecalculate:
+          type: boolean
+      required:
+        - forecast
+        - autoRecalculate
+    CreateForecastRq:
+      type: object
+      additionalProperties: false
+      properties:
+        accountId:
+          $ref: "#/components/schemas/Id"
+        asOfDate:
+          $ref: "#/components/schemas/Date"
+        scope:
+          $ref: "#/components/schemas/ForecastScope"
+      required:
+        - accountId
+        - asOfDate
+        - scope
+    JobRs:
+      type: object
+      additionalProperties: false
+      properties:
+        id:
+          $ref: "#/components/schemas/Id"
+        companyId:
+          $ref: "#/components/schemas/Id"
+        accountId:
+          $ref: "#/components/schemas/Id"
+        type:
+          $ref: "#/components/schemas/JobType"
+        status:
+          $ref: "#/components/schemas/JobStatus"
+        progress:
+          type: integer
+          minimum: 0
+          maximum: 100
+        resultId:
+          anyOf:
+            - $ref: "#/components/schemas/Id"
+            - type: "null"
+        error:
+          anyOf:
+            - $ref: "#/components/schemas/Problem"
+            - type: "null"
+        createdAt:
+          $ref: "#/components/schemas/Instant"
+        startedAt:
+          anyOf:
+            - $ref: "#/components/schemas/Instant"
+            - type: "null"
+        finishedAt:
+          anyOf:
+            - $ref: "#/components/schemas/Instant"
+            - type: "null"
+      required:
+        - id
+        - companyId
+        - accountId
+        - type
+        - status
+        - progress
+        - resultId
+        - error
+        - createdAt
+        - startedAt
+        - finishedAt
+      description: resultId только при SUCCEEDED; error только при FAILED. Progress=100 только SUCCEEDED.
+    RiskEstimate:
+      type: object
+      additionalProperties: false
+      properties:
+        availability:
+          $ref: "#/components/schemas/RiskAvailability"
+        method:
+          $ref: "#/components/schemas/RiskMethod"
+        probability:
+          anyOf:
+            - $ref: "#/components/schemas/Probability"
+            - type: "null"
+        scenarioCount:
+          type: integer
+          minimum: 0
+        calibrationOriginCount:
+          type: integer
+          minimum: 0
+        probabilityCalibrated:
+          type: boolean
+          const: false
+        assumptions:
+          type: array
+          items:
+            type: string
+            maxLength: 500
+      required:
+        - availability
+        - method
+        - probability
+        - scenarioCount
+        - calibrationOriginCount
+        - probabilityCalibrated
+        - assumptions
+      allOf:
+        - if:
+            properties:
+              availability:
+                const: AVAILABLE
+            required:
+              - availability
+          then:
+            properties:
+              probability:
+                $ref: "#/components/schemas/Probability"
+              scenarioCount:
+                type: integer
+                minimum: 100
+              calibrationOriginCount:
+                type: integer
+                minimum: 12
+          else:
+            properties:
+              probability:
+                type: "null"
+              scenarioCount:
+                type: integer
+                const: 0
+    ForecastDayRs:
+      type: object
+      additionalProperties: false
+      properties:
+        date:
+          $ref: "#/components/schemas/Date"
+        plannedIn:
+          $ref: "#/components/schemas/Money"
+        plannedOut:
+          $ref: "#/components/schemas/Money"
+        recurringIn:
+          $ref: "#/components/schemas/Money"
+        recurringOut:
+          $ref: "#/components/schemas/Money"
+        residualIn:
+          $ref: "#/components/schemas/Money"
+        residualOut:
+          $ref: "#/components/schemas/Money"
+        inflow:
+          $ref: "#/components/schemas/Money"
+        outflow:
+          $ref: "#/components/schemas/Money"
+        balance:
+          $ref: "#/components/schemas/Money"
+        balanceP10:
+          anyOf:
+            - $ref: "#/components/schemas/Money"
+            - type: "null"
+        balanceP50:
+          anyOf:
+            - $ref: "#/components/schemas/Money"
+            - type: "null"
+        balanceP90:
+          anyOf:
+            - $ref: "#/components/schemas/Money"
+            - type: "null"
+        pBelowZero:
+          anyOf:
+            - $ref: "#/components/schemas/Probability"
+            - type: "null"
+        pBelowBuffer:
+          anyOf:
+            - $ref: "#/components/schemas/Probability"
+            - type: "null"
+      required:
+        - date
+        - plannedIn
+        - plannedOut
+        - recurringIn
+        - recurringOut
+        - residualIn
+        - residualOut
+        - inflow
+        - outflow
+        - balance
+        - balanceP10
+        - balanceP50
+        - balanceP90
+        - pBelowZero
+        - pBelowBuffer
+    GapEpisodeRs:
+      type: object
+      additionalProperties: false
+      properties:
+        id:
+          $ref: "#/components/schemas/Id"
+        kind:
+          type: string
+          enum:
+            - CASH_GAP
+            - BUFFER_BREACH
+        fromDate:
+          $ref: "#/components/schemas/Date"
+        toDate:
+          $ref: "#/components/schemas/Date"
+        threshold:
+          $ref: "#/components/schemas/Money"
+        expectedMinimumBalance:
+          $ref: "#/components/schemas/Money"
+        expectedShortfall:
+          $ref: "#/components/schemas/Money"
+        probability:
+          anyOf:
+            - $ref: "#/components/schemas/Probability"
+            - type: "null"
+        shortfallP50:
+          anyOf:
+            - $ref: "#/components/schemas/Money"
+            - type: "null"
+        shortfallP90:
+          anyOf:
+            - $ref: "#/components/schemas/Money"
+            - type: "null"
+        shortfallBasis:
+          type: string
+          enum:
+            - CONDITIONAL_ON_BREACH
+        riskEstimateAvailability:
+          $ref: "#/components/schemas/RiskAvailability"
+      required:
+        - id
+        - kind
+        - fromDate
+        - toDate
+        - threshold
+        - expectedMinimumBalance
+        - expectedShortfall
+        - probability
+        - shortfallP50
+        - shortfallP90
+        - shortfallBasis
+        - riskEstimateAvailability
+    ForecastRs:
+      type: object
+      additionalProperties: false
+      properties:
+        id:
+          $ref: "#/components/schemas/Id"
+        companyId:
+          $ref: "#/components/schemas/Id"
+        accountId:
+          $ref: "#/components/schemas/Id"
+        jobId:
+          $ref: "#/components/schemas/Id"
+        asOfDate:
+          $ref: "#/components/schemas/Date"
+        horizonDays:
+          type: integer
+          enum:
+            - 30
+        scope:
+          $ref: "#/components/schemas/ForecastScope"
+        algorithm:
+          $ref: "#/components/schemas/Algorithm"
+        algorithmVersion:
+          type: string
+          maxLength: 100
+        settings:
+          $ref: "#/components/schemas/ForecastSettings"
+        inputDataVersion:
+          type: integer
+          minimum: 0
+        snapshotId:
+          $ref: "#/components/schemas/Id"
+        staleness:
+          $ref: "#/components/schemas/Staleness"
+        startBalance:
+          $ref: "#/components/schemas/Money"
+        startBalanceDate:
+          $ref: "#/components/schemas/Date"
+        quality:
+          $ref: "#/components/schemas/DataQuality"
+        warnings:
+          type: array
+          items:
+            $ref: "#/components/schemas/Warning"
+        riskEstimate:
+          $ref: "#/components/schemas/RiskEstimate"
+        expectedMinimumBalance:
+          $ref: "#/components/schemas/Money"
+        firstExpectedGapDate:
+          anyOf:
+            - $ref: "#/components/schemas/Date"
+            - type: "null"
+        maxExpectedShortfall:
+          $ref: "#/components/schemas/Money"
+        days:
+          type: array
+          items:
+            $ref: "#/components/schemas/ForecastDayRs"
+          minItems: 30
+          maxItems: 30
+        gaps:
+          type: array
+          items:
+            $ref: "#/components/schemas/GapEpisodeRs"
+        createdAt:
+          $ref: "#/components/schemas/Instant"
+      required:
+        - id
+        - companyId
+        - accountId
+        - jobId
+        - asOfDate
+        - horizonDays
+        - scope
+        - algorithm
+        - algorithmVersion
+        - settings
+        - inputDataVersion
+        - snapshotId
+        - staleness
+        - startBalance
+        - startBalanceDate
+        - quality
+        - warnings
+        - riskEstimate
+        - expectedMinimumBalance
+        - firstExpectedGapDate
+        - maxExpectedShortfall
+        - days
+        - gaps
+        - createdAt
+      description:
+        Дни последовательны asOf+1…asOf+30; суммы и балансы согласованы. Дневные вероятности/квантили null если
+        риск недоступен.
+    BacktestRq:
+      type: object
+      additionalProperties: false
+      properties:
+        accountId:
+          $ref: "#/components/schemas/Id"
+        firstOrigin:
+          $ref: "#/components/schemas/Date"
+        lastOrigin:
+          $ref: "#/components/schemas/Date"
+        stepDays:
+          type: integer
+          minimum: 7
+          maximum: 30
+        scope:
+          $ref: "#/components/schemas/ForecastScope"
+        windowWeeks:
+          type: integer
+          enum:
+            - 8
+            - 10
+            - 12
+        evaluateRisk:
+          type: boolean
+      required:
+        - accountId
+        - firstOrigin
+        - lastOrigin
+        - stepDays
+        - scope
+        - windowWeeks
+        - evaluateRisk
+    HorizonMetric:
+      type: object
+      additionalProperties: false
+      properties:
+        horizonDay:
+          type: integer
+          minimum: 1
+          maximum: 30
+        maeBalance:
+          anyOf:
+            - $ref: "#/components/schemas/Money"
+            - type: "null"
+        rmseBalance:
+          anyOf:
+            - $ref: "#/components/schemas/Money"
+            - type: "null"
+        evaluatedCount:
+          type: integer
+          minimum: 0
+      required:
+        - horizonDay
+        - maeBalance
+        - rmseBalance
+        - evaluatedCount
+    GapMetrics:
+      type: object
+      additionalProperties: false
+      properties:
+        truePositive:
+          type: integer
+          minimum: 0
+        falsePositive:
+          type: integer
+          minimum: 0
+        falseNegative:
+          type: integer
+          minimum: 0
+        precision:
+          anyOf:
+            - $ref: "#/components/schemas/Probability"
+            - type: "null"
+        recall:
+          anyOf:
+            - $ref: "#/components/schemas/Probability"
+            - type: "null"
+        medianLeadDays:
+          anyOf:
+            - type: number
+              minimum: 0
+            - type: "null"
+        dateMaeDays:
+          anyOf:
+            - type: number
+              minimum: 0
+            - type: "null"
+        shortfallMae:
+          anyOf:
+            - $ref: "#/components/schemas/Money"
+            - type: "null"
+      required:
+        - truePositive
+        - falsePositive
+        - falseNegative
+        - precision
+        - recall
+        - medianLeadDays
+        - dateMaeDays
+        - shortfallMae
+    CalibrationBin:
+      type: object
+      additionalProperties: false
+      properties:
+        fromProbability:
+          $ref: "#/components/schemas/Probability"
+        toProbability:
+          $ref: "#/components/schemas/Probability"
+        count:
+          type: integer
+          minimum: 0
+        meanProbability:
+          anyOf:
+            - $ref: "#/components/schemas/Probability"
+            - type: "null"
+        observedRate:
+          anyOf:
+            - $ref: "#/components/schemas/Probability"
+            - type: "null"
+      required:
+        - fromProbability
+        - toProbability
+        - count
+        - meanProbability
+        - observedRate
+    RiskMetrics:
+      type: object
+      additionalProperties: false
+      properties:
+        brierScore:
+          anyOf:
+            - $ref: "#/components/schemas/Probability"
+            - type: "null"
+        evaluatedCount:
+          type: integer
+          minimum: 0
+        calibrationBins:
+          type: array
+          items:
+            $ref: "#/components/schemas/CalibrationBin"
+        interval80Coverage:
+          anyOf:
+            - $ref: "#/components/schemas/Probability"
+            - type: "null"
+      required:
+        - brierScore
+        - evaluatedCount
+        - calibrationBins
+        - interval80Coverage
+    BacktestOriginRs:
+      type: object
+      additionalProperties: false
+      properties:
+        asOfDate:
+          $ref: "#/components/schemas/Date"
+        status:
+          type: string
+          enum:
+            - EVALUATED
+            - SKIPPED
+        reason:
+          anyOf:
+            - type: string
+              maxLength: 500
+            - type: "null"
+        maeBalance:
+          anyOf:
+            - $ref: "#/components/schemas/Money"
+            - type: "null"
+        evaluatedDays:
+          type: integer
+          minimum: 0
+          maximum: 30
+      required:
+        - asOfDate
+        - status
+        - reason
+        - maeBalance
+        - evaluatedDays
+    BacktestRs:
+      type: object
+      additionalProperties: false
+      properties:
+        id:
+          $ref: "#/components/schemas/Id"
+        companyId:
+          $ref: "#/components/schemas/Id"
+        accountId:
+          $ref: "#/components/schemas/Id"
+        jobId:
+          $ref: "#/components/schemas/Id"
+        status:
+          $ref: "#/components/schemas/BacktestStatus"
+        algorithm:
+          $ref: "#/components/schemas/Algorithm"
+        algorithmVersion:
+          type: string
+          maxLength: 100
+        scope:
+          $ref: "#/components/schemas/ForecastScope"
+        windowWeeks:
+          type: integer
+          enum:
+            - 8
+            - 10
+            - 12
+        firstOrigin:
+          $ref: "#/components/schemas/Date"
+        lastOrigin:
+          $ref: "#/components/schemas/Date"
+        stepDays:
+          type: integer
+          minimum: 7
+          maximum: 30
+        snapshotId:
+          $ref: "#/components/schemas/Id"
+        inputDataVersion:
+          type: integer
+          minimum: 0
+        staleness:
+          $ref: "#/components/schemas/Staleness"
+        evaluatedOrigins:
+          type: integer
+          minimum: 0
+        skippedOrigins:
+          type: integer
+          minimum: 0
+        evaluatedDays:
+          type: integer
+          minimum: 0
+        maeBalance:
+          anyOf:
+            - $ref: "#/components/schemas/Money"
+            - type: "null"
+        rmseBalance:
+          anyOf:
+            - $ref: "#/components/schemas/Money"
+            - type: "null"
+        horizons:
+          type: array
+          items:
+            $ref: "#/components/schemas/HorizonMetric"
+        gapMetrics:
+          $ref: "#/components/schemas/GapMetrics"
+        riskMetrics:
+          $ref: "#/components/schemas/RiskMetrics"
+        warnings:
+          type: array
+          items:
+            $ref: "#/components/schemas/Warning"
+        createdAt:
+          $ref: "#/components/schemas/Instant"
+      required:
+        - id
+        - companyId
+        - accountId
+        - jobId
+        - status
+        - algorithm
+        - algorithmVersion
+        - scope
+        - windowWeeks
+        - firstOrigin
+        - lastOrigin
+        - stepDays
+        - snapshotId
+        - inputDataVersion
+        - staleness
+        - evaluatedOrigins
+        - skippedOrigins
+        - evaluatedDays
+        - maeBalance
+        - rmseBalance
+        - horizons
+        - gapMetrics
+        - riskMetrics
+        - warnings
+        - createdAt
+    RiskFactorRs:
+      type: object
+      additionalProperties: false
+      properties:
+        kind:
+          type: string
+          enum:
+            - KNOWN_OUTFLOW
+            - LOW_EXPECTED_INFLOW
+            - OVERDUE_INFLOW
+            - DATA_LIMITATION
+        title:
+          type: string
+          maxLength: 200
+        amount:
+          anyOf:
+            - $ref: "#/components/schemas/Money"
+            - type: "null"
+        date:
+          anyOf:
+            - $ref: "#/components/schemas/Date"
+            - type: "null"
+        expectedPaymentId:
+          anyOf:
+            - $ref: "#/components/schemas/Id"
+            - type: "null"
+        recurringPatternId:
+          anyOf:
+            - $ref: "#/components/schemas/Id"
+            - type: "null"
+        description:
+          type: string
+          maxLength: 1000
+      required:
+        - kind
+        - title
+        - amount
+        - date
+        - expectedPaymentId
+        - recurringPatternId
+        - description
+    RecommendationRs:
+      type: object
+      additionalProperties: false
+      properties:
+        kind:
+          $ref: "#/components/schemas/RecommendationKind"
+        title:
+          type: string
+          maxLength: 200
+        description:
+          type: string
+          maxLength: 1000
+        expectedPaymentId:
+          anyOf:
+            - $ref: "#/components/schemas/Id"
+            - type: "null"
+        requiresUserAgreement:
+          type: boolean
+      required:
+        - kind
+        - title
+        - description
+        - expectedPaymentId
+        - requiresUserAgreement
+    AlertRs:
+      type: object
+      additionalProperties: false
+      properties:
+        id:
+          $ref: "#/components/schemas/Id"
+        companyId:
+          $ref: "#/components/schemas/Id"
+        accountId:
+          $ref: "#/components/schemas/Id"
+        type:
+          $ref: "#/components/schemas/AlertType"
+        title:
+          type: string
+          maxLength: 200
+        description:
+          type: string
+          maxLength: 2000
+        forecastId:
+          anyOf:
+            - $ref: "#/components/schemas/Id"
+            - type: "null"
+        gapId:
+          anyOf:
+            - $ref: "#/components/schemas/Id"
+            - type: "null"
+        expectedPaymentId:
+          anyOf:
+            - $ref: "#/components/schemas/Id"
+            - type: "null"
+        date:
+          anyOf:
+            - $ref: "#/components/schemas/Date"
+            - type: "null"
+        shortfall:
+          anyOf:
+            - $ref: "#/components/schemas/Money"
+            - type: "null"
+        probability:
+          anyOf:
+            - $ref: "#/components/schemas/Probability"
+            - type: "null"
+        active:
+          type: boolean
+        acknowledgedAt:
+          anyOf:
+            - $ref: "#/components/schemas/Instant"
+            - type: "null"
+        version:
+          type: integer
+          minimum: 1
+        createdAt:
+          $ref: "#/components/schemas/Instant"
+      required:
+        - id
+        - companyId
+        - accountId
+        - type
+        - title
+        - description
+        - forecastId
+        - gapId
+        - expectedPaymentId
+        - date
+        - shortfall
+        - probability
+        - active
+        - acknowledgedAt
+        - version
+        - createdAt
+    GapDetailsRs:
+      type: object
+      additionalProperties: false
+      properties:
+        forecastId:
+          $ref: "#/components/schemas/Id"
+        gap:
+          $ref: "#/components/schemas/GapEpisodeRs"
+        factors:
+          type: array
+          items:
+            $ref: "#/components/schemas/RiskFactorRs"
+        recommendations:
+          type: array
+          items:
+            $ref: "#/components/schemas/RecommendationRs"
+      required:
+        - forecastId
+        - gap
+        - factors
+        - recommendations
+    DashboardRs:
+      type: object
+      additionalProperties: false
+      properties:
+        companyId:
+          $ref: "#/components/schemas/Id"
+        accountId:
+          $ref: "#/components/schemas/Id"
+        asOfDate:
+          $ref: "#/components/schemas/Date"
+        dataVersion:
+          type: integer
+          minimum: 0
+        currentBalance:
+          anyOf:
+            - $ref: "#/components/schemas/BalanceAnchorRs"
+            - type: "null"
+        latestForecast:
+          anyOf:
+            - $ref: "#/components/schemas/ForecastRs"
+            - type: "null"
+        latestBacktest:
+          anyOf:
+            - $ref: "#/components/schemas/BacktestRs"
+            - type: "null"
+        activeAlerts:
+          type: array
+          items:
+            $ref: "#/components/schemas/AlertRs"
+        upcomingPayments:
+          type: array
+          items:
+            $ref: "#/components/schemas/ExpectedPaymentRs"
+        quality:
+          $ref: "#/components/schemas/DataQualityRs"
+        runningJobs:
+          type: array
+          items:
+            $ref: "#/components/schemas/JobRs"
+        permissions:
+          $ref: "#/components/schemas/Permissions"
+      required:
+        - companyId
+        - accountId
+        - asOfDate
+        - dataVersion
+        - currentBalance
+        - latestForecast
+        - latestBacktest
+        - activeAlerts
+        - upcomingPayments
+        - quality
+        - runningJobs
+        - permissions
+    AccessCheckRq:
+      type: object
+      additionalProperties: false
+      properties:
+        userId:
+          $ref: "#/components/schemas/Id"
+        permission:
+          type: string
+          enum:
+            - READ
+            - IMPORT
+            - WRITE
+            - MANAGE_MEMBERS
+        accountId:
+          anyOf:
+            - $ref: "#/components/schemas/Id"
+            - type: "null"
+      required:
+        - userId
+        - permission
+        - accountId
+    AccessCheckRs:
+      type: object
+      additionalProperties: false
+      properties:
+        allowed:
+          type: boolean
+        role:
+          anyOf:
+            - $ref: "#/components/schemas/Role"
+            - type: "null"
+        companyId:
+          $ref: "#/components/schemas/Id"
+        accountId:
+          anyOf:
+            - $ref: "#/components/schemas/Id"
+            - type: "null"
+      required:
+        - allowed
+        - role
+        - companyId
+        - accountId
+    ReserveImportRq:
+      type: object
+      additionalProperties: false
+      properties:
+        accountId:
+          $ref: "#/components/schemas/Id"
+        fileName:
+          type: string
+          maxLength: 200
+        fileSha256:
+          type: string
+          pattern: ^[a-f0-9]{64}$
+        validationMode:
+          type: string
+          enum:
+            - ATOMIC
+            - SKIP_INVALID
+        completeness:
+          $ref: "#/components/schemas/Completeness"
+        declaredFromDate:
+          anyOf:
+            - $ref: "#/components/schemas/Date"
+            - type: "null"
+        declaredToDate:
+          anyOf:
+            - $ref: "#/components/schemas/Date"
+            - type: "null"
+      required:
+        - accountId
+        - fileName
+        - fileSha256
+        - validationMode
+        - completeness
+        - declaredFromDate
+        - declaredToDate
+    NormalizedPayment:
+      type: object
+      additionalProperties: false
+      properties:
+        sourceRow:
+          type: integer
+          minimum: 1
+        externalOperationId:
+          anyOf:
+            - type: string
+              maxLength: 100
+            - type: "null"
+        operationDate:
+          $ref: "#/components/schemas/Date"
+        amount:
+          $ref: "#/components/schemas/PositiveMoney"
+        direction:
+          $ref: "#/components/schemas/Direction"
+        counterpartyInn:
+          anyOf:
+            - type: string
+              maxLength: 12
+            - type: "null"
+        counterpartyName:
+          anyOf:
+            - type: string
+              maxLength: 500
+            - type: "null"
+        purpose:
+          anyOf:
+            - type: string
+              maxLength: 2000
+            - type: "null"
+        categoryCode:
+          type: string
+          maxLength: 64
+        categorySource:
+          $ref: "#/components/schemas/CategorySource"
+        ruleVersion:
+          anyOf:
+            - type: string
+              maxLength: 100
+            - type: "null"
+        balanceEod:
+          anyOf:
+            - $ref: "#/components/schemas/Money"
+            - type: "null"
+      required:
+        - sourceRow
+        - externalOperationId
+        - operationDate
+        - amount
+        - direction
+        - counterpartyInn
+        - counterpartyName
+        - purpose
+        - categoryCode
+        - categorySource
+        - ruleVersion
+        - balanceEod
+    ImportBatchRq:
+      type: object
+      additionalProperties: false
+      properties:
+        batchNumber:
+          type: integer
+          minimum: 0
+        batchSha256:
+          type: string
+          pattern: ^[a-f0-9]{64}$
+        rows:
+          type: array
+          items:
+            $ref: "#/components/schemas/NormalizedPayment"
+          maxItems: 1000
+        issues:
+          type: array
+          items:
+            $ref: "#/components/schemas/ImportIssueRs"
+          maxItems: 1000
+      required:
+        - batchNumber
+        - batchSha256
+        - rows
+        - issues
+    ImportBatchRs:
+      type: object
+      additionalProperties: false
+      properties:
+        importId:
+          $ref: "#/components/schemas/Id"
+        batchNumber:
+          type: integer
+          minimum: 0
+        stagedRows:
+          type: integer
+          minimum: 0
+        replayed:
+          type: boolean
+      required:
+        - importId
+        - batchNumber
+        - stagedRows
+        - replayed
+    FinalizeImportRq:
+      type: object
+      additionalProperties: false
+      properties:
+        batchCount:
+          type: integer
+          minimum: 0
+        totalRows:
+          type: integer
+          minimum: 0
+        rejectedRows:
+          type: integer
+          minimum: 0
+      required:
+        - batchCount
+        - totalRows
+        - rejectedRows
+    SnapshotPayment:
+      type: object
+      additionalProperties: false
+      properties:
+        paymentId:
+          $ref: "#/components/schemas/Id"
+        date:
+          $ref: "#/components/schemas/Date"
+        amount:
+          $ref: "#/components/schemas/PositiveMoney"
+        direction:
+          $ref: "#/components/schemas/Direction"
+        categoryCode:
+          type: string
+          maxLength: 64
+        counterpartyKey:
+          anyOf:
+            - type: string
+              maxLength: 150
+            - type: "null"
+      required:
+        - paymentId
+        - date
+        - amount
+        - direction
+        - categoryCode
+        - counterpartyKey
+    ForecastSnapshot:
+      type: object
+      additionalProperties: false
+      properties:
+        snapshotId:
+          $ref: "#/components/schemas/Id"
+        companyId:
+          $ref: "#/components/schemas/Id"
+        accountId:
+          $ref: "#/components/schemas/Id"
+        asOfDate:
+          $ref: "#/components/schemas/Date"
+        inputDataVersion:
+          type: integer
+          minimum: 0
+        algorithmVersion:
+          type: string
+          maxLength: 100
+        settings:
+          $ref: "#/components/schemas/ForecastSettings"
+        scope:
+          $ref: "#/components/schemas/ForecastScope"
+        startBalance:
+          $ref: "#/components/schemas/Money"
+        startBalanceDate:
+          $ref: "#/components/schemas/Date"
+        historyFrom:
+          $ref: "#/components/schemas/Date"
+        dailyHistory:
+          type: array
+          items:
+            $ref: "#/components/schemas/DailyActualRs"
+        payments:
+          type: array
+          items:
+            $ref: "#/components/schemas/SnapshotPayment"
+        knownPlans:
+          type: array
+          items:
+            $ref: "#/components/schemas/ExpectedPaymentRs"
+        recurringPatterns:
+          type: array
+          items:
+            $ref: "#/components/schemas/RecurringPatternRs"
+        completeRanges:
+          type: array
+          items:
+            $ref: "#/components/schemas/CompletenessRangeRs"
+        calibrationOrigins:
+          type: array
+          items:
+            $ref: "#/components/schemas/CalibrationOriginSnapshot"
+          description:
+            Зрелые исторические origins, подготовленные Orchestrator для калибровки риска. Только input на
+            cutoff и outcomes для scoring. Пустой массив означает отсутствие калибровки, а не восстановление прошлого
+            из текущих правок.
+        fingerprint:
+          type: string
+          pattern: ^[a-f0-9]{64}$
+      required:
+        - snapshotId
+        - companyId
+        - accountId
+        - asOfDate
+        - inputDataVersion
+        - algorithmVersion
+        - settings
+        - scope
+        - startBalance
+        - startBalanceDate
+        - historyFrom
+        - dailyHistory
+        - payments
+        - knownPlans
+        - recurringPatterns
+        - completeRanges
+        - calibrationOrigins
+        - fingerprint
+      description:
+        "Input только до cutoff: известные планы, регулярности, категории и полнота в состоянии на cutoff; история
+        для residual calibration не содержит операций после cutoff. calibrationOrigins содержит отдельные входы исторических
+        origins; результат оцениваемых 30 дней не может попасть в их features."
+    CalibrationOriginSnapshot:
+      type: object
+      additionalProperties: false
+      properties:
+        input:
+          allOf:
+            - $ref: "#/components/schemas/ForecastSnapshot"
+            - type: object
+              properties:
+                calibrationOrigins:
+                  type: array
+                  maxItems: 0
+                  description: Вложенная калибровка запрещена; origin считается точечной моделью без рекурсивного bootstrap.
+        actualDays:
+          type: array
+          items:
+            $ref: "#/components/schemas/DailyActualRs"
+          minItems: 30
+          maxItems: 30
+        actualPayments:
+          type: array
+          items:
+            $ref: "#/components/schemas/SnapshotPayment"
+      required:
+        - input
+        - actualDays
+        - actualPayments
+      description:
+        "Один зрелый исторический origin для калибровки. input.asOfDate — cutoff origin, input.asOfDate+30≤asOfDate
+        внешнего snapshot. input содержит только состояние, известное на cutoff: совпадают companyId/accountId/algorithmVersion,
+        settings.windowWeeks и правила категоризации той эпохи; поздние USER overrides, планы и регулярности не переносятся.
+        input.calibrationOrigins обязан быть пустым. actualDays (ровно 30 полных дней origin+1…origin+30) и actualPayments
+        тех же дней служат только scoring ошибок и никогда не передаются как features. Если корректное состояние origin
+        восстановить нельзя, origin не включается; при нехватке origins probability=null, а не утёкшая оценка."
+    BacktestSnapshot:
+      type: object
+      additionalProperties: false
+      properties:
+        snapshotId:
+          $ref: "#/components/schemas/Id"
+        companyId:
+          $ref: "#/components/schemas/Id"
+        accountId:
+          $ref: "#/components/schemas/Id"
+        inputDataVersion:
+          type: integer
+          minimum: 0
+        request:
+          $ref: "#/components/schemas/BacktestRq"
+        settings:
+          $ref: "#/components/schemas/ForecastSettings"
+        originSnapshots:
+          type: array
+          items:
+            $ref: "#/components/schemas/ForecastSnapshot"
+        actualDays:
+          type: array
+          items:
+            $ref: "#/components/schemas/DailyActualRs"
+      required:
+        - snapshotId
+        - companyId
+        - accountId
+        - inputDataVersion
+        - request
+        - settings
+        - originSnapshots
+        - actualDays
+    RecurringDetectionInput:
+      type: object
+      additionalProperties: false
+      properties:
+        accountId:
+          $ref: "#/components/schemas/Id"
+        asOfDate:
+          $ref: "#/components/schemas/Date"
+        inputDataVersion:
+          type: integer
+          minimum: 0
+        payments:
+          type: array
+          items:
+            $ref: "#/components/schemas/SnapshotPayment"
+      required:
+        - accountId
+        - asOfDate
+        - inputDataVersion
+        - payments
+    RecurringDetectionResult:
+      type: object
+      additionalProperties: false
+      properties:
+        detectorVersion:
+          type: string
+          maxLength: 100
+        patterns:
+          type: array
+          items:
+            $ref: "#/components/schemas/RecurringPatternRs"
+      required:
+        - detectorVersion
+        - patterns
+    CompanyPageRs:
+      type: object
+      additionalProperties: false
+      properties:
+        items:
+          type: array
+          items:
+            $ref: "#/components/schemas/CompanyRs"
+        page:
+          $ref: "#/components/schemas/PageMeta"
+      required:
+        - items
+        - page
+    MemberPageRs:
+      type: object
+      additionalProperties: false
+      properties:
+        items:
+          type: array
+          items:
+            $ref: "#/components/schemas/MemberRs"
+        page:
+          $ref: "#/components/schemas/PageMeta"
+      required:
+        - items
+        - page
+    AccountPageRs:
+      type: object
+      additionalProperties: false
+      properties:
+        items:
+          type: array
+          items:
+            $ref: "#/components/schemas/AccountRs"
+        page:
+          $ref: "#/components/schemas/PageMeta"
+      required:
+        - items
+        - page
+    PaymentPageRs:
+      type: object
+      additionalProperties: false
+      properties:
+        items:
+          type: array
+          items:
+            $ref: "#/components/schemas/PaymentRs"
+        page:
+          $ref: "#/components/schemas/PageMeta"
+      required:
+        - items
+        - page
+    CounterpartyPageRs:
+      type: object
+      additionalProperties: false
+      properties:
+        items:
+          type: array
+          items:
+            $ref: "#/components/schemas/CounterpartyRs"
+        page:
+          $ref: "#/components/schemas/PageMeta"
+      required:
+        - items
+        - page
+    ImportPageRs:
+      type: object
+      additionalProperties: false
+      properties:
+        items:
+          type: array
+          items:
+            $ref: "#/components/schemas/ImportRs"
+        page:
+          $ref: "#/components/schemas/PageMeta"
+      required:
+        - items
+        - page
+    ImportIssuePageRs:
+      type: object
+      additionalProperties: false
+      properties:
+        items:
+          type: array
+          items:
+            $ref: "#/components/schemas/ImportIssueRs"
+        page:
+          $ref: "#/components/schemas/PageMeta"
+      required:
+        - items
+        - page
+    ExpectedPaymentPageRs:
+      type: object
+      additionalProperties: false
+      properties:
+        items:
+          type: array
+          items:
+            $ref: "#/components/schemas/ExpectedPaymentRs"
+        page:
+          $ref: "#/components/schemas/PageMeta"
+      required:
+        - items
+        - page
+    AllocationPageRs:
+      type: object
+      additionalProperties: false
+      properties:
+        items:
+          type: array
+          items:
+            $ref: "#/components/schemas/AllocationRs"
+        page:
+          $ref: "#/components/schemas/PageMeta"
+      required:
+        - items
+        - page
+    ForecastPageRs:
+      type: object
+      additionalProperties: false
+      properties:
+        items:
+          type: array
+          items:
+            $ref: "#/components/schemas/ForecastRs"
+        page:
+          $ref: "#/components/schemas/PageMeta"
+      required:
+        - items
+        - page
+    BacktestPageRs:
+      type: object
+      additionalProperties: false
+      properties:
+        items:
+          type: array
+          items:
+            $ref: "#/components/schemas/BacktestRs"
+        page:
+          $ref: "#/components/schemas/PageMeta"
+      required:
+        - items
+        - page
+    BacktestOriginPageRs:
+      type: object
+      additionalProperties: false
+      properties:
+        items:
+          type: array
+          items:
+            $ref: "#/components/schemas/BacktestOriginRs"
+        page:
+          $ref: "#/components/schemas/PageMeta"
+      required:
+        - items
+        - page
+    AlertPageRs:
+      type: object
+      additionalProperties: false
+      properties:
+        items:
+          type: array
+          items:
+            $ref: "#/components/schemas/AlertRs"
+        page:
+          $ref: "#/components/schemas/PageMeta"
+      required:
+        - items
+        - page
+    RecurringPatternPageRs:
+      type: object
+      additionalProperties: false
+      properties:
+        items:
+          type: array
+          items:
+            $ref: "#/components/schemas/RecurringPatternRs"
+        page:
+          $ref: "#/components/schemas/PageMeta"
+      required:
+        - items
+        - page
+    CompletenessRangePageRs:
+      type: object
+      additionalProperties: false
+      properties:
+        items:
+          type: array
+          items:
+            $ref: "#/components/schemas/CompletenessRangeRs"
+        page:
+          $ref: "#/components/schemas/PageMeta"
+      required:
+        - items
+        - page
+    JobPageRs:
+      type: object
+      additionalProperties: false
+      properties:
+        items:
+          type: array
+          items:
+            $ref: "#/components/schemas/JobRs"
+        page:
+          $ref: "#/components/schemas/PageMeta"
+      required:
+        - items
+        - page
+    CategoryListRs:
+      type: object
+      additionalProperties: false
+      properties:
+        items:
+          type: array
+          items:
+            $ref: "#/components/schemas/CategoryRs"
+      required:
+        - items
+    DailyActualListRs:
+      type: object
+      additionalProperties: false
+      properties:
+        items:
+          type: array
+          items:
+            $ref: "#/components/schemas/DailyActualRs"
+      required:
+        - items
+    ChangedPaymentsRs:
+      type: object
+      additionalProperties: false
+      properties:
+        items:
+          type: array
+          items:
+            $ref: "#/components/schemas/PaymentRs"
+      required:
+        - items

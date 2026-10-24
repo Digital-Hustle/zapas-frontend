@@ -6,16 +6,15 @@
   "exports": {
     ".": "./src/index.ts",
     "./auth": "./src/generated/auth.ts",
-    "./ledger": "./src/generated/ledger.ts",
-    "./planning": "./src/generated/planning.ts",
-    "./forecast": "./src/generated/forecast.ts",
-    "./notify": "./src/generated/notify.ts"
+    "./auth-profile": "./src/generated/auth-profile.ts",
+    "./orchestrator": "./src/generated/orchestrator.ts",
+    "./preprocessor": "./src/generated/preprocessor.ts"
   },
   "scripts": {
-    "gen": "orval --config orval.config.ts",
+    "gen": "node scripts-gen.mjs",
     "lint": "eslint . --max-warnings 0",
     "typecheck": "tsc --noEmit",
-    "test": "vitest run --passWithNoTests"
+    "test": "vitest run"
   },
   "dependencies": {
     "@tanstack/react-query": "5.104.5",

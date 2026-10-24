@@ -7,6 +7,7 @@ import { root } from "../lib/run.mjs";
 
 test("public API client contains no internal endpoints", () => {
   const dir = join(root, "packages/api/src/generated");
+  assert.deepEqual(readdirSync(dir).sort(), ["auth-profile.ts", "auth.ts", "orchestrator.ts", "preprocessor.ts"]);
   for (const name of readdirSync(dir)) {
     const source = readFileSync(join(dir, name), "utf8");
     assert.ok(!source.includes("/internal/"), `${name}: internal endpoint exported`);

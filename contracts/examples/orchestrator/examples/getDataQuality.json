@@ -1,0 +1,17 @@
+{
+  "accountId": "00000000-0000-4000-8000-000000000002",
+  "fromDate": "2026-06-01",
+  "toDate": "2026-10-24",
+  "quality": "LIMITED",
+  "completeDayCount": 146,
+  "missingDayCount": 0,
+  "balanceMismatchCount": 0,
+  "emptyPurposeCount": 0,
+  "warnings": [
+    {
+      "code": "RISK_UNAVAILABLE",
+      "message": "Пока доступны только пять полных калибровочных траекторий.",
+      "date": null
+    }
+  ]
+}

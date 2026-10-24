@@ -1,21 +1,21 @@
 ---
 name: security-fintech
-description: Финансовая безопасность «Запас» — auth/OTP, tenant IDOR, токены/CSRF, импорт/экспорт, AI/SSRF, логи/секреты, supply chain и audit. Используй для security ревью и перед PR в критическую зону.
+description: Проверка защиты финансовых данных cashflow — сетевые границы, gateway-контекст, права организаций, CSV, деньги, планы, секреты и логи. Используй при изменении соответствующих границ и ревью безопасности.
 ---
 
-# Security review
+# Финансовая безопасность
 
-Основной источник — docs/SECURITY.md. Скилл не обещает «невзламываемость»; находки записываются с reproduction/impact и тестом. Документация о контроле не равна его реализации.
+Архитектура — cashflow-architecture. Полные требования — docs/SECURITY.md и docs/GATEWAY_AUTH.md от корня проекта.
 
-1. Определить assets/trust boundaries: company/account/role/session/OTP/invoice/forecast/raw import/provider secret.
-2. Матрица endpoint×role×tenant: аноним, свой owner/accountant/viewer, чужой user, admin без финансовых прав, service identity без user прав. Deny by default; отсутствие endpoint/role/provenance — blocker.
-3. JWT подпись/iss/aud/exp/kid, алгоритм allowlist; no headers identity. Host-only HttpOnly cookies и CSRF/Origin, mobile Bearer release TLS.
-4. OTP real code любому валидному email, одинаковые ответы независимо от existence; rate key HMAC(email), limits distributed+atomic, failed attempts persist, absolute expiry, replay/success race тесты. Email OTP — не MFA, почтовый аккаунт остаётся фактором риска.
-5. Refresh atomic consume/reuse revocation с полными session families; concurrent refresh clients serialized. Если добавлен grace, он только для привязанной идемпотентной request, не общий replay.
-6. Money boundaries Decimal/constraints, immutable actual ledger; сценарий не меняет факт, модель/LLM не разрешает платёж или налоговое решение.
-7. Import limits, duplicate semantics, ZIP/formula injection, filename/path traversal, no fetch URLs из импортированных текстов. CSV escape с отрицательными числами правильного numeric type.
-8. AI: explicit egress allowlist, least data, vendor retention/terms, prompt injection treated untrusted, output schema+enum validation, probabilities measured not assumed. Admin URL нельзя произвольно ходить в metadata/внутрсеть.
-9. Logs/body traces исключают токены/OTP/ИНН/финансы; audit append-only с actor и reason, без generic DTO serialization. Secrets env/keystore/AEAD rotation, no defaults/backdoor.
-10. Реальные scans + licensed dependency/version + tests. Finding table P0/P1/P2, affected path, repro, fix, regression test; false positive allowlist narrow reason/date/reviewer.
+1. Проверить границы Auth/Gateway/PreProcessor/Orchestrator/Forecast и владение двумя БД. Внутренний вызов без JWT разрешён только принятой сетевой моделью.
+2. JWT валидирует Gateway. До проксирования заменить клиентские заголовки идентификации и удалить токены/cookies из бизнес-запроса. Auth/refresh имеет узкое исключение; CSRF/Origin остаются на внешней границе.
+3. Orchestrator проверяет актуальный доступ к организации и ограничивает SQL по CompanyScope. PreProcessor не начинает импорт только на основании companyId файла.
+4. Внутренние порты закрыты извне; ограничить разрешённых вызывающих. Недоверенный участник общей сети ломает доверие заголовкам.
+5. Проверить OTP/refresh на одноразовость, сроки и гонки; права по пользовательскому контексту и companyId, а не произвольному заголовку.
+6. CSV не выполняет формулы/внешние URL. Лимиты и отчёт ошибок; устойчивый импорт, проверка дублей и сохранение исходного факта.
+7. Деньги точные; факт и план отдельно, сопоставление исключает двойной счёт. Вероятность/процент точности не выдумывать из точечного прогноза.
+8. Секреты вне git; логи без токенов, контактов и финансовых тел. Проверить зависимости/лицензии по реальному состоянию.
 
-Сторонние differential-review/supply-chain-risk-auditor — только по необходимости; их scripts сначала читать. Не запускать installer/скрипт с боевыми секретами.
+Находки описывать с затронутым путём, воспроизведением, последствием и исправлением. Документированные меры не считать реализованными автоматически.
+
+Объединённый Auth handoff ADR-110: docs/AUTH_PROFILE_API.md, docs/GATEWAY_AUTH.md и docs/CLIENT_HANDOFF.md. Основной browser contract auth-profile.yaml; Android/native и legacy — auth.yaml. Общие userId/sid, JWT только на Gateway, бизнес-компании/роли только Orchestrator. Namespaces API раздельные; при cookie-мутациях CSRF/Origin. Выбор transport без fallback и очистка browser cookies согласованы в handoff; реализация проверяется отдельно.

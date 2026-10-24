@@ -1,0 +1,41 @@
+{
+  "id": "00000000-0000-4000-8000-000000000001",
+  "companyId": "00000000-0000-4000-8000-000000000001",
+  "accountId": "00000000-0000-4000-8000-000000000001",
+  "jobId": "00000000-0000-4000-8000-000000000001",
+  "status": "PARTIAL",
+  "algorithm": "WEEKDAY_MEAN_V1",
+  "algorithmVersion": "example",
+  "scope": "HISTORY_ONLY",
+  "windowWeeks": 8,
+  "firstOrigin": "2026-10-24",
+  "lastOrigin": "2026-10-24",
+  "stepDays": 7,
+  "snapshotId": "00000000-0000-4000-8000-000000000001",
+  "inputDataVersion": 0,
+  "staleness": "CURRENT",
+  "evaluatedOrigins": 0,
+  "skippedOrigins": 0,
+  "evaluatedDays": 0,
+  "maeBalance": null,
+  "rmseBalance": null,
+  "horizons": [],
+  "gapMetrics": {
+    "truePositive": 0,
+    "falsePositive": 0,
+    "falseNegative": 0,
+    "precision": null,
+    "recall": null,
+    "medianLeadDays": null,
+    "dateMaeDays": null,
+    "shortfallMae": null
+  },
+  "riskMetrics": {
+    "brierScore": null,
+    "evaluatedCount": 0,
+    "calibrationBins": [],
+    "interval80Coverage": null
+  },
+  "warnings": [],
+  "createdAt": "2026-10-24T09:00:00Z"
+}

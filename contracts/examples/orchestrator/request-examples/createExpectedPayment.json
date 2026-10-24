@@ -1,0 +1,13 @@
+{
+  "accountId": "00000000-0000-4000-8000-000000000002",
+  "title": "Разовая аренда помещения под мероприятие",
+  "direction": "OUT",
+  "amount": "160000.00",
+  "dueDate": "2026-10-29",
+  "categoryCode": "RENT",
+  "counterpartyKey": null,
+  "note": "Иллюстративный дополнительный расход, не учтённый в среднем.",
+  "relation": "ADDITIONAL",
+  "recurringPatternId": null,
+  "baselineCounterpartyKey": null
+}

@@ -1,0 +1,24 @@
+{
+  "id": "00000000-0000-4000-8000-000000000001",
+  "name": "example",
+  "legalForm": "OOO",
+  "inn": null,
+  "kpp": null,
+  "timezone": "Europe/Moscow",
+  "ownerUserId": "00000000-0000-4000-8000-000000000001",
+  "myRole": "OWNER",
+  "permissions": {
+    "canEditCompany": false,
+    "canManageMembers": false,
+    "canImport": false,
+    "canEditPayments": false,
+    "canManagePlans": false,
+    "canRunForecast": false,
+    "canRunBacktest": false
+  },
+  "archived": false,
+  "dataVersion": 0,
+  "version": 1,
+  "createdAt": "2026-10-24T09:00:00Z",
+  "updatedAt": "2026-10-24T09:00:00Z"
+}

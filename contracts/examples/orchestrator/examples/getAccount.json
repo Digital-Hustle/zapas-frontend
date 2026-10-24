@@ -1,0 +1,13 @@
+{
+  "id": "00000000-0000-4000-8000-000000000002",
+  "companyId": "00000000-0000-4000-8000-000000000001",
+  "name": "Основной RUB-счёт",
+  "bankName": null,
+  "accountNumber": null,
+  "externalCompanyId": "C001",
+  "currency": "RUB",
+  "archived": false,
+  "latestBalance": "100000.00",
+  "latestBalanceDate": "2026-10-24",
+  "version": 1
+}
