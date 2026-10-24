@@ -142,3 +142,4 @@
 | `duration.page` | 0.42 s |
 | `duration.spin` | 0.8 s |
 | `duration.skeleton` | 1.4 s |
+| `duration.tooltip` | 0.3 s |

@@ -6,6 +6,7 @@ import "./styles.css";
 import { SelectionExample } from "./SelectionExample.tsx";
 import { ScenarioExample } from "./ScenarioExample.tsx";
 import { FoundationExample } from "./FoundationExample.tsx";
+import { NavigationExample } from "./NavigationExample.tsx";
 
 const options = [
   { value: "rent", label: "Аренда" },
@@ -53,6 +54,7 @@ function Controls() {
             <SelectionExample />
             <ScenarioExample />
             <FoundationExample />
+            <NavigationExample />
             <section
               aria-label="Состояния"
               className="border-border bg-card flex flex-col gap-4 rounded-xl border p-4 md:p-6"

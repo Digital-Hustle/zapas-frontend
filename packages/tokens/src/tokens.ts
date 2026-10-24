@@ -182,17 +182,13 @@ export const semantic = {
 export type SemanticColor = keyof typeof semantic.light;
 
 /** Пары, где допустим только крупный текст (≥ 18.66 px bold / 24 px) — контраст ≥ 3:1. */
-export const contrastLargeTextOnly: readonly SemanticColor[] = [
-  "warning",
-  "accent",
-];
+export const contrastLargeTextOnly: readonly SemanticColor[] = ["warning", "accent"];
 
 export const gradient = {
   brand: `linear-gradient(135deg, ${palette.green[600]} 0%, ${palette.green[400]} 55%, ${palette.lime[400]} 100%)`,
   hero: `radial-gradient(120% 80% at 80% 0%, rgb(181 230 85 / 0.22) 0%, transparent 60%), radial-gradient(90% 70% at 0% 20%, rgb(22 166 96 / 0.18) 0%, transparent 55%)`,
   "hero-dark": `radial-gradient(120% 80% at 80% 0%, rgb(181 230 85 / 0.10) 0%, transparent 60%), radial-gradient(90% 70% at 0% 20%, rgb(60 197 126 / 0.14) 0%, transparent 55%)`,
-  sheen:
-    "linear-gradient(90deg, transparent 0%, rgb(255 255 255 / 0.5) 50%, transparent 100%)",
+  sheen: "linear-gradient(90deg, transparent 0%, rgb(255 255 255 / 0.5) 50%, transparent 100%)",
 } as const;
 
 export const font = {
@@ -243,9 +239,7 @@ export const fontWeight = {
 
 export const spacingBase = 4;
 /** Разрешённые шаги (множители spacingBase). Остальные ловит zapas-check. */
-export const spacingSteps = [
-  0, 0.5, 1, 1.5, 2, 2.5, 3, 4, 5, 6, 8, 10, 12, 16, 20, 24, 32,
-] as const;
+export const spacingSteps = [0, 0.5, 1, 1.5, 2, 2.5, 3, 4, 5, 6, 8, 10, 12, 16, 20, 24, 32] as const;
 
 export const control = { sm: 36, md: 44, lg: 52 } as const;
 
@@ -283,8 +277,7 @@ export const shadow = {
   light: {
     xs: "0 1px 2px rgb(14 21 18 / 0.05)",
     card: "0 1px 2px rgb(14 21 18 / 0.04), 0 4px 16px -6px rgb(14 21 18 / 0.08)",
-    float:
-      "0 2px 6px rgb(14 21 18 / 0.06), 0 16px 40px -12px rgb(14 21 18 / 0.18)",
+    float: "0 2px 6px rgb(14 21 18 / 0.06), 0 16px 40px -12px rgb(14 21 18 / 0.18)",
     pop: "0 4px 12px rgb(14 21 18 / 0.08), 0 24px 56px -16px rgb(14 21 18 / 0.24)",
     glow: "0 0 0 6px rgb(22 166 96 / 0.12)",
   },
@@ -344,6 +337,7 @@ export const motion = {
     page: 0.42,
     spin: 0.8,
     skeleton: 1.4,
+    tooltip: 0.3,
   },
   stagger: { step: 0.035, max: 8 },
   distance: { enter: 12, exit: 8, lift: 3, slide: 24, shake: 6 },

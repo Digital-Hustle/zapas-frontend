@@ -56,7 +56,50 @@ DatePicker поддерживает `required`, `disabledDates` (Matcher react-d
 и очистку необязательной даты. Некорректный `value` помечается `aria-invalid`.
 Внешний label обязателен: Field + id либо `aria-label`.
 
-## Проверка в браузере
+## Поиск, диапазоны, меню и таблицы
+
+`Combobox` и `MultiSelect` принимают `options` как Select, ref/onBlur и aria-атрибуты
+для формы. Варианты >100 виртуализируются; поиск и стрелки/Home/End/Enter работают по
+всему списку. MultiSelect принимает массив строк, сохраняет выбранные значения при
+фильтрации и передаёт повторяющиеся hidden `name` в форму. Для async-справочника:
+`remote`, `onSearchChange`, `loading`, `error`; запрос, AbortSignal и защита от устаревших
+ответов остаются в query-слое клиента. Компонент не делает fetch.
+
+`DateRangePicker` возвращает только полный `{from,to}` из календарных дат. Escape
+отменяет незавершённый выбор. `today` задаёт бизнес-дату для пресетов; «30 дней»
+включает текущую дату и предыдущие 29, «Квартал» — текущий календарный квартал.
+При `disabledDates` пресеты отключены; календарь не включает запрещённые дни.
+
+`TooltipProvider` в корне приложения объединяет delay/skip-delay 300 мс из tokens;
+`Tooltip` и `Popover` принимают один доступный trigger element. `DropdownMenu` и
+`ContextMenu` — `MenuItem[]` с disabled/danger/separatorBefore. `ScrollArea` требует
+label и заданную высоту; ref ведёт на viewport. `CommandPalette` открывается Ctrl/Cmd+K
+вне текстового ввода; принимает доступные доменные actions. Проверка прав остаётся
+обязанностью приложения/backend.
+
+`Dialog` возвращает фокус вызывающему элементу даже при внешнем управлении open;
+`Sheet` принудительно использует нижнюю шторку, `AlertDialog` блокирует закрытие и
+повторный submit во время операции, сохраняет ошибку и не делает auto retry.
+
+`Table`/`VirtualTable` принимают `ColumnDef<T>[]`, data, label и стабильный `getRowId`.
+Сортировку включать явно для нужного столбца через `enableSorting`; для серверной
+пагинации обязательны `manualSorting`, `sorting`, `onSortingChange`. Таблица не
+превращает строки денег в Number и не угадывает финансовую сортировку. Selection
+контролируется через `selection`/`onSelectionChange`; приложение очищает его при смене
+company/account. Выбор всех относится к загруженным строкам. Loading — Skeleton;
+ошибка refetch сохраняет строки. VirtualTable использует TanStack Virtual и показывает
+только видимые строки с aria-rowcount/aria-rowindex. Для выгрузки всех данных нужен
+серверный экспорт, печать виртуальной области не является таким экспортом.
+
+Основы: Radix 1.8.1, cmdk 1.1.1, TanStack Table 8.21.3 и Virtual 3.14.22 (MIT).
+Mutable instances TanStack изолированы в функциях `use no memo`: React Compiler
+не должен мемоизировать их методы. Проверены реальные scroll/keyboard в Chromium.
+
+Этап навигации: 49 UI unit-тестов, 12 сочетаний браузерной матрицы; axe проверяет
+также открытые поиск, календарь периода, подтверждение и палитру. Клавиатура достигает
+250-го варианта, виртуальная таблица — 500-й строки при ограниченном числе DOM-строк.
+
+## Запуск витрины
 
 `pnpm dev:ui` из корня → [локальная витрина](http://localhost:5174).
 Она показывает форму, loading/empty/validation/disabled и переключение темы,

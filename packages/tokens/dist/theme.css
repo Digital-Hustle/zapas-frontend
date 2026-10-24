@@ -218,6 +218,7 @@
   --duration-page: 420ms;
   --duration-spin: 800ms;
   --duration-skeleton: 1400ms;
+  --duration-tooltip: 300ms;
 }
 .dark {
   --background: #0b0f0d;
@@ -351,6 +352,9 @@
 }
 @utility duration-skeleton {
   transition-duration: 1400ms;
+}
+@utility duration-tooltip {
+  transition-duration: 300ms;
 }
 @utility clip-squircle {
   clip-path: inset(0 round var(--clip-r, var(--r-md)));

@@ -25,3 +25,23 @@
   --rdp-day-height: var(--spacing-control-md);
   --rdp-day-width: var(--spacing-control-md);
 }
+
+/* Popup appearance uses an opacity-only animation, also safe for reduced motion. */
+@keyframes zapas-popup-enter {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+.zapas-popup {
+  animation: zapas-popup-enter var(--duration-fast) ease-out;
+}
+
+.zapas-command-item[data-selected="true"] {
+  background: var(--muted);
+}
+.zapas-command-item[data-disabled="true"] {
+  opacity: 0.5;
+}
