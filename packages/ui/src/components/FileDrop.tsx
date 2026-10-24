@@ -44,6 +44,8 @@ export function FileDrop({
   const generatedId = useId();
   const inputId = id ?? generatedId;
   const messageId = `${inputId}-message`;
+  const titleId = `${inputId}-title`;
+  const hintId = `${inputId}-hint`;
   const [rejection, setRejection] = useState("");
   const unavailable = Boolean(disabled || busy);
   const { getRootProps, getInputProps, isDragActive, isDragReject } = useDropzone({
@@ -76,9 +78,9 @@ export function FileDrop({
       <div
         {...getRootProps({
           role: "button",
-          "aria-label": label,
+          "aria-labelledby": titleId,
           "aria-disabled": unavailable,
-          "aria-describedby": messageId,
+          "aria-describedby": `${hintId} ${messageId}`,
           "aria-invalid": Boolean(message),
           className: cn(
             "border-input bg-card duration-fast focus-visible:border-ring focus-visible:shadow-glow flex min-h-32 cursor-pointer flex-col items-center justify-center gap-3 rounded-lg border border-dashed p-6 text-center transition-colors outline-none",
@@ -92,9 +94,13 @@ export function FileDrop({
           {...getInputProps({ id: inputId, "aria-label": label, hidden: true, style: { display: "none" } })}
         />
         <Upload aria-hidden className="text-muted-foreground size-6" />
-        <span className="font-medium">{isDragActive ? "Отпустите файл здесь" : label}</span>
-        <span className="text-muted-foreground text-sm">Перетащите файл или нажмите Enter для выбора</span>
+        <span id={titleId} className="font-medium">
+          {isDragActive ? "Отпустите файл здесь" : label}
+        </span>
       </div>
+      <p id={hintId} className="text-muted-foreground text-center text-sm">
+        Перетащите файл или нажмите Enter для выбора
+      </p>
       <p
         id={messageId}
         role={message ? "alert" : undefined}
