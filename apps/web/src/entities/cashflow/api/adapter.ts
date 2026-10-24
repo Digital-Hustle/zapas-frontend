@@ -427,12 +427,18 @@ export const cashflowApi = {
         items: result.items.map((item) => mapPlan(item, companyId, accountId)),
       };
     }),
-  alerts: (companyId: string, accountId: string, number: number, active: boolean, signal: AbortSignal) =>
+  alerts: (
+    companyId: string,
+    accountId: string,
+    number: number,
+    active: boolean | null,
+    signal: AbortSignal,
+  ) =>
     businessCall(async () =>
       page(
         await listAlerts(
           uuid.parse(companyId),
-          { ...listParams(accountId, number), active },
+          { ...listParams(accountId, number), ...(active === null ? {} : { active }) },
           { ...quiet, signal },
         ),
         (item) => mapAlert(item, companyId, accountId),

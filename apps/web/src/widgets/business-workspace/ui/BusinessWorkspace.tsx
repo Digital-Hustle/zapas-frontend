@@ -28,6 +28,7 @@ const sections = [
   ["plans", "Будущие платежи"],
   ["quality", "Качество"],
   ["jobs", "Расчёты"],
+  ["alerts", "Предупреждения"],
 ] as const;
 
 export function WorkspaceNavigation({ companyId, accountId }: { companyId: string; accountId: string }) {

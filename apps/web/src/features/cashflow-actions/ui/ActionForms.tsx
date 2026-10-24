@@ -125,6 +125,7 @@ export function PostForm<T extends FieldValues, R>({
           <div className="bg-warning-soft text-warning-soft-foreground space-y-3 rounded-md p-4 text-sm">
             <p>Перечитайте ресурс и явно примите версию. После этого отправьте новую команду отдельно.</p>
             <Button
+              className="min-h-control-md h-auto max-w-full py-2 whitespace-normal"
               variant="secondary"
               size="sm"
               loading={current.isFetching}
@@ -135,6 +136,7 @@ export function PostForm<T extends FieldValues, R>({
             {current.isError && <ActionIssue issue={businessIssue(current.error)} recovery={recovery} />}
             {current.data && !current.isFetching && !current.isError && (
               <Button
+                className="min-h-control-md h-auto max-w-full py-2 whitespace-normal"
                 size="sm"
                 variant="secondary"
                 disabled={!active}
@@ -155,6 +157,7 @@ export function PostForm<T extends FieldValues, R>({
         )}
         <div className="flex flex-wrap gap-3">
           <Button
+            className="min-h-control-md h-auto max-w-full py-2 whitespace-normal"
             type="submit"
             loading={command.pending}
             disabled={!active || command.retryLeft > 0 || conflict}
@@ -166,7 +169,12 @@ export function PostForm<T extends FieldValues, R>({
                 : label}
           </Button>
           {onClose && (
-            <Button variant="secondary" disabled={command.pending || command.uncertain} onClick={close}>
+            <Button
+              className="min-h-control-md h-auto max-w-full py-2 whitespace-normal"
+              variant="secondary"
+              disabled={command.pending || command.uncertain}
+              onClick={close}
+            >
               Отмена
             </Button>
           )}
@@ -219,6 +227,7 @@ export function VersionedForm<T extends FieldValues, R extends { version: number
             <ActionIssue issue={businessIssue(editor.current.error)} recovery={recovery} />
           )}
           <Button
+            className="min-h-control-md h-auto max-w-full py-2 whitespace-normal"
             variant="secondary"
             size="sm"
             loading={editor.current.isFetching}
@@ -228,6 +237,7 @@ export function VersionedForm<T extends FieldValues, R extends { version: number
           </Button>
           {editor.current.data && !editor.current.isError && !editor.current.isFetching && (
             <Button
+              className="min-h-control-md h-auto max-w-full py-2 whitespace-normal"
               variant="secondary"
               size="sm"
               disabled={!active}
@@ -247,6 +257,7 @@ export function VersionedForm<T extends FieldValues, R extends { version: number
       )}
       <div className="flex flex-wrap gap-3">
         <Button
+          className="min-h-control-md h-auto max-w-full py-2 whitespace-normal"
           type="submit"
           loading={editor.pending}
           disabled={!active || editor.blocked || editor.retryLeft > 0}
@@ -254,7 +265,12 @@ export function VersionedForm<T extends FieldValues, R extends { version: number
           {editor.retryLeft > 0 ? `Повторить через ${editor.retryLeft} с` : label}
         </Button>
         {onClose && (
-          <Button variant="secondary" disabled={editor.pending} onClick={onClose}>
+          <Button
+            className="min-h-control-md h-auto max-w-full py-2 whitespace-normal"
+            variant="secondary"
+            disabled={editor.pending}
+            onClick={onClose}
+          >
             Отмена
           </Button>
         )}
