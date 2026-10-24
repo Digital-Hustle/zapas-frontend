@@ -38,7 +38,7 @@ function fixture() {
         .status,
     ).toBe(200);
   };
-  return { network, fetcher, request, login };
+  return { network, fetcher, request, login, csrf: () => csrf };
 }
 it("never forwards API requests, including unknown or external APIs, and preserves asset requests", async () => {
   const f = fixture();
@@ -120,4 +120,89 @@ it("session revocation and a new preview instance cannot retain another session'
   expect((await f.request(`${auth}/refresh`, "POST")).status).toBe(401);
   expect((await f.request(root)).status).toBe(401);
   expect((await fixture().request(root)).status).toBe(401);
+});
+
+it("returns an explicitly synthetic CSV report with stable multipart replay and scoped history", async () => {
+  const f = fixture();
+  await f.login();
+  const company = companyRs.parse((await read(companiesRs, f.request(root))).items[0]);
+  const account = accountRs.parse(
+    (await read(accountsRs, f.request(`${root}/${company.id}/accounts`))).items[0],
+  );
+  const key = crypto.randomUUID();
+  const upload = () => {
+    const body = new FormData();
+    body.set("file", new File(["demo,not,parsed\n"], "test.csv", { type: "text/csv" }));
+    body.set("accountId", account.id);
+    body.set("validationMode", "ATOMIC");
+    body.set("completeness", "UNKNOWN");
+    return f.fetcher(origin + `/api/v1/preprocessor/companies/${company.id}/imports`, {
+      method: "POST",
+      body,
+      headers: { "X-CSRF-Token": f.csrf(), "Idempotency-Key": key },
+    });
+  };
+  const schema = z.object({
+    id: z.uuid(),
+    accountId: z.uuid(),
+    acceptedRows: z.number(),
+    fileSha256: z.string().length(64),
+  });
+  const first = await read(schema, upload());
+  expect(await read(schema, upload())).toEqual(first);
+  expect(first.accountId).toBe(account.id);
+  expect(first.acceptedRows).toBe(2);
+  const issues = await read(
+    z.object({ items: z.array(z.object({ message: z.string() })) }),
+    f.request(`${root}/${company.id}/imports/${first.id}/issues`),
+  );
+  expect(issues.items.map((i) => i.message).join()).toContain("файла не анализировалось");
+  expect(f.network).not.toHaveBeenCalled();
+});
+
+it("changes only payment categories and versions, enforces conflict and replays the original bulk command", async () => {
+  const f = fixture();
+  await f.login();
+  const company = companyRs.parse((await read(companiesRs, f.request(root))).items[0]);
+  const account = accountRs.parse(
+    (await read(accountsRs, f.request(`${root}/${company.id}/accounts`))).items[0],
+  );
+  const schema = z.object({
+    id: z.uuid(),
+    amount: z.string(),
+    operationDate: z.string(),
+    direction: z.string(),
+    version: z.number(),
+    categoryCode: z.string(),
+  });
+  const path = `${root}/${company.id}/payments`;
+  const rows = await read(z.object({ items: z.array(schema) }), f.request(path + `?accountId=${account.id}`));
+  const payment = schema.parse(rows.items[0]);
+  const saved = await read(
+    schema,
+    f.request(path + `/${payment.id}/category`, "PATCH", { categoryCode: "TRANSFER" }, { "If-Match": '"1"' }),
+  );
+  expect(saved).toEqual({ ...payment, version: 2, categoryCode: "TRANSFER" });
+  expect(
+    (
+      await f.request(
+        path + `/${payment.id}/category`,
+        "PATCH",
+        { categoryCode: "OTHER" },
+        { "If-Match": '"1"' },
+      )
+    ).status,
+  ).toBe(409);
+  const body = { categoryCode: "OTHER", payments: [{ paymentId: payment.id, expectedVersion: 2 }] },
+    headers = { "Idempotency-Key": crypto.randomUUID() };
+  const result = await read(
+    z.object({ items: z.array(schema) }),
+    f.request(path + "/category-changes", "POST", body, headers),
+  );
+  expect(
+    await read(
+      z.object({ items: z.array(schema) }),
+      f.request(path + "/category-changes", "POST", body, headers),
+    ),
+  ).toEqual(result);
 });

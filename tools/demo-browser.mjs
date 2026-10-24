@@ -17,7 +17,13 @@ await mkdir(evidence, { recursive: true });
 let server;
 let browser;
 const results = [];
+const remote = process.env.DEMO_PREVIEW_URL;
+const base = remote ? new URL(remote).origin : "http://127.0.0.1:5186";
+if (remote) assert.equal(new URL(base).protocol, "https:");
+const isoDate = new Intl.DateTimeFormat("sv-SE", { timeZone: "Europe/Moscow" }).format(new Date());
+const dateLabel = new Intl.DateTimeFormat("ru-RU", { timeZone: "Europe/Moscow", day: "numeric", month: "long" }).format(new Date());
 try {
+  if (!remote) {
   for (const [mode, enabled] of [["normal", "0"], ["demo", "1"]]) {
     const built = spawnSync(process.execPath, [join(app, "node_modules/vite/bin/vite.js"), "build", "--outDir", join(scratch, mode), "--emptyOutDir"], { cwd: app, env: { ...process.env, VITE_PREVIEW_MOCKS: enabled, VITE_API_BASE: "" }, encoding: "utf8" });
     assert.equal(built.status, 0, built.stderr || built.error?.message);
@@ -36,6 +42,14 @@ try {
     await new Promise((resolve) => setTimeout(resolve, 100));
   }
   assert.ok(ready, "Preview server did not start");
+  } else {
+    const checked = spawnSync("curl", ["--proto", "=https", "--fail", "--silent", "--show-error", "--max-time", "15", base + "/deployment.json"], { encoding: "utf8" });
+    assert.equal(checked.status, 0, checked.stderr);
+    const metadata = JSON.parse(checked.stdout);
+    assert.equal(metadata.mockApi, true, "Refusing to run demo writes against a non-demo release");
+    assert.equal(metadata.backend, false);
+    if (process.env.PREVIEW_COMMIT) assert.equal(metadata.frontendCommit, process.env.PREVIEW_COMMIT);
+  }
   browser = await chromium.launch({ headless: true });
   for (const width of [360, 768, 1440]) for (const colorScheme of ["light", "dark"]) {
     const context = await browser.newContext({ viewport: { width, height: 1000 }, colorScheme, reducedMotion: width === 360 ? "no-preference" : "reduce", timezoneId: "Europe/Moscow" });
@@ -43,7 +57,6 @@ try {
     const apiRequests = [], errors = [];
     page.on("request", (request) => { if (new URL(request.url()).pathname.startsWith("/api/")) apiRequests.push(request.url()); });
     page.on("pageerror", (error) => errors.push(error.message));
-    await page.clock.setFixedTime(new Date("2026-10-24T09:00:00Z"));
     const audit = async () => {
       await page.evaluate(() => Promise.all(document.getAnimations().filter((a) => a.effect?.getComputedTiming().iterations !== Infinity).map((a) => a.finished.catch(() => undefined))));
       const a11y = await new AxeBuilder({ page }).withTags(["wcag2a", "wcag2aa", "wcag21aa", "wcag22aa"]).analyze();
@@ -63,9 +76,9 @@ try {
       await page.getByRole("button", { name: "Получить код", exact: true }).click();
       await page.getByRole("textbox", { name: "Код из письма, шесть цифр", exact: true }).fill("000123");
       await page.getByRole("button", { name: "Войти", exact: true }).click();
-      await expect(page.getByRole("heading", { name: "Организации и счета", exact: true })).toBeVisible();
+      await expect(page.getByRole("heading", { name: "Организации и счета", exact: true })).toBeVisible().catch((error) => { console.log("Login stopped at", page.url()); throw error; });
     };
-    await page.goto("http://127.0.0.1:5186/login");
+    await page.goto(base + "/login");
     await expect(page.getByRole("complementary", { name: "Демонстрационный режим" })).toBeVisible();
     await audit(); await login();
     await page.getByRole("button", { name: "Создать организацию", exact: true }).click();
@@ -85,13 +98,13 @@ try {
     await clearToasts();
     await page.getByRole("button", { name: "Указать остаток", exact: true }).click();
     await page.getByRole("button", { name: "Дата остатка", exact: true }).click();
-    await page.getByRole("button", { name: /^.*24 октября/u }).click();
+    await page.getByRole("button", { name: new RegExp("^.*" + dateLabel) }).click();
     await page.getByLabel("Остаток, ₽", { exact: true }).fill("-99999999999999999.99");
     await page.getByLabel("Основание", { exact: true }).fill("Тестовый остаток");
     await page.getByLabel("Основание", { exact: true }).press("Tab");
     await audit();
     await page.getByRole("dialog").getByRole("button", { name: "Сохранить остаток", exact: true }).click();
-    await expect(page.getByRole("dialog").getByText("Сохранён ручной остаток на 2026-10-24.", { exact: true })).toBeVisible();
+    await expect(page.getByRole("dialog").getByText(`Сохранён ручной остаток на ${isoDate}.`, { exact: true })).toBeVisible();
     await page.getByRole("button", { name: "Готово", exact: true }).click();
     await clearToasts(); await audit();
     await page.screenshot({ path: join(evidence, `workspace-${width}-${colorScheme}.png`), fullPage: true });
@@ -116,9 +129,10 @@ try {
     await expect(page.getByRole("heading", { name: "Вход в Запас", exact: true })).toBeVisible();
     assert.deepEqual(apiRequests, [], "Demo API must not reach the network"); assert.deepEqual(errors, []);
     results.push({ width, colorScheme, API: "memory-only", axe: 0, reset: true });
+    console.log(`Demo ${width}px ${colorScheme} passed`);
     await context.close();
   }
-  console.log(JSON.stringify({ normalBuildHasMocks: false, demo: results }, null, 2));
+  console.log(JSON.stringify({ normalBuildHasMocks: remote ? null : false, demo: results }, null, 2));
 } finally {
   await browser?.close(); server?.kill("SIGTERM"); await rm(scratch, { recursive: true, force: true });
 }

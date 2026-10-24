@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { createBusinessPreview } from "./business.ts";
 
 // Preview only. No cookies, real identities, persistence, email or network fallback.
 export const DEMO_CODE = "000123";
@@ -102,7 +103,11 @@ function problem(status: number, code: string) {
 }
 
 /** Isolated per page. Unhandled API paths fail closed, never reach a real backend. */
-export function createPreviewFetch(network: typeof fetch, origin: string): typeof fetch {
+export function createPreviewFetch(
+  network: typeof fetch,
+  origin: string,
+  { latencyMs = 0 } = {},
+): typeof fetch {
   let authenticated = false;
   let challenge: { id: string; expires: number; attempts: number } | null = null;
   const profile = {
@@ -128,6 +133,7 @@ export function createPreviewFetch(network: typeof fetch, origin: string): typeo
     account(owner.id, "Новый счёт без остатка"),
     account(viewer.id, "Счёт для просмотра"),
   ];
+  const business = createBusinessPreview(companies, accounts);
   let sessions = [sessionId, "00000000-0000-4000-8000-000000000012"].map((id) => ({
     id,
     current: id === sessionId,
@@ -147,6 +153,18 @@ export function createPreviewFetch(network: typeof fetch, origin: string): typeo
     if (!url.pathname.startsWith("/api/")) return network(input, init);
     const request = new Request(input instanceof Request ? input : url, init);
     request.signal.throwIfAborted();
+    if (latencyMs > 0)
+      await new Promise<void>((resolve, reject) => {
+        const abort = () => {
+          clearTimeout(timer);
+          reject(new DOMException("Aborted", "AbortError"));
+        };
+        const timer = setTimeout(() => {
+          request.signal.removeEventListener("abort", abort);
+          resolve();
+        }, latencyMs);
+        request.signal.addEventListener("abort", abort, { once: true });
+      });
     if (url.origin !== origin) return problem(503, "DEPENDENCY_UNAVAILABLE");
     const path = url.pathname;
     const method = request.method;
@@ -154,10 +172,12 @@ export function createPreviewFetch(network: typeof fetch, origin: string): typeo
       !path.startsWith(auth + "/") &&
       path !== profilePath &&
       path !== companiesPath &&
-      !path.startsWith(companiesPath + "/")
+      !path.startsWith(companiesPath + "/") &&
+      !path.startsWith("/api/v1/preprocessor/companies/")
     )
       return problem(503, "DEPENDENCY_UNAVAILABLE");
-    const raw = await request.text();
+    const multipart = request.headers.get("Content-Type")?.startsWith("multipart/form-data") ?? false;
+    const raw = multipart ? "" : await request.text();
     request.signal.throwIfAborted();
     let body: unknown;
     try {
@@ -218,6 +238,8 @@ export function createPreviewFetch(network: typeof fetch, origin: string): typeo
         return json(null, 204);
       }
       if (!authenticated) return problem(401, "AUTHENTICATION_REQUIRED");
+      const extra = await business(request, body);
+      if (extra) return extra;
       if (path === profilePath && method === "GET") return json(profile);
       if (path === profilePath && method === "PUT") {
         const value = z
@@ -348,5 +370,5 @@ export function createPreviewFetch(network: typeof fetch, origin: string): typeo
 }
 
 export function installPreviewApi() {
-  window.fetch = createPreviewFetch(window.fetch.bind(window), window.location.origin);
+  window.fetch = createPreviewFetch(window.fetch.bind(window), window.location.origin, { latencyMs: 150 });
 }

@@ -15,6 +15,7 @@ export function PreviewNotice() {
             Письма не отправляются. Почта для входа: demo@example.test · код: <strong>000123</strong>.
           </p>
           <p>Изменения живут в этой вкладке до обновления страницы. Не вводите реальные данные.</p>
+          <p>CSV показывает подготовленный демоотчёт и тестовые операции; файл не анализируется.</p>
         </div>
         <nav aria-label="Разделы демо" className="flex flex-wrap items-center gap-3">
           <Link to="/app" className="underline">
