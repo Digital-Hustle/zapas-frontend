@@ -21,7 +21,7 @@ export async function publishPreview({ sha, keyFile, directory = resolve("dist/p
   assertCommit(sha);
   if (command("git", ["rev-parse", "HEAD"]) !== sha || command("git", ["status", "--porcelain"])) throw new Error("Publish requires a clean checkout of the expected commit");
   const manifest = JSON.parse(await readFile(join(directory, "web/deployment.json"), "utf8"));
-  if (manifest.frontendCommit !== sha || manifest.preview !== true || manifest.backend !== false) throw new Error("Invalid release manifest");
+  if (manifest.frontendCommit !== sha || manifest.preview !== true || typeof manifest.mockApi !== "boolean" || manifest.backend !== !manifest.mockApi) throw new Error("Invalid release manifest");
   const sshOptions = ["-i", resolve(keyFile), "-o", "IdentitiesOnly=yes", "-o", "BatchMode=yes", "-o", "StrictHostKeyChecking=yes", "-o", `UserKnownHostsFile=${resolve(".github/preview_known_hosts")}`, "-o", "ConnectTimeout=15"];
   const server = "zapas-deploy@45.146.165.12";
   const ssh = (script) => command("ssh", [...sshOptions, server, script]);
@@ -65,6 +65,6 @@ if (process.argv[1]?.endsWith("/publish-preview.mjs") || process.argv[1] === "to
       await writeFile(keyFile, secret.endsWith("\n") ? secret : `${secret}\n`, { mode: 0o600 });
     }
     await publishPreview({ sha, keyFile });
-    console.log(`Published checked preview ${sha}; backend remains disconnected.`);
+    console.log(`Published checked preview ${sha}; real Gateway API enabled.`);
   } finally { if (directory) await rm(directory, { recursive: true, force: true }); }
 }

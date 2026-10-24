@@ -31,11 +31,14 @@ export async function buildPreview(sha, output = resolve("dist/preview")) {
   const scratch = await mkdtemp(join(tmpdir(), "zapas-preview-build-"));
   try {
     const mockApi = process.env.PREVIEW_MOCK_API === "1";
-    command("pnpm", ["--filter", "@zapas/web", "exec", "vite", "build", "--outDir", join(scratch, "web"), "--emptyOutDir"], { ...process.env, VITE_PREVIEW_MOCKS: mockApi ? "1" : "0", VITE_API_BASE: "" });
+    const webEnv = { ...process.env, VITE_API_BASE: "" };
+    if (mockApi) webEnv.VITE_PREVIEW_MOCKS = "1";
+    else delete webEnv.VITE_PREVIEW_MOCKS;
+    command("pnpm", ["--filter", "@zapas/web", "exec", "vite", "build", "--outDir", join(scratch, "web"), "--emptyOutDir"], webEnv);
     command("pnpm", ["--filter", "@zapas/web", "exec", "vite", "build", "../../packages/ui/examples", "--config", "vite.config.ts", "--base=/ui/", "--outDir", join(scratch, "ui"), "--emptyOutDir"]);
     await rm(output, { recursive: true, force: true });
     for (const surface of ["web", "ui"]) await copyPublicBuild(join(scratch, surface), join(output, surface));
-    await writeFile(join(output, "web/deployment.json"), JSON.stringify({ frontendCommit: sha, preview: true, backend: false, mockApi, ui: "/ui/" }, null, 2) + "\n");
+    await writeFile(join(output, "web/deployment.json"), JSON.stringify({ frontendCommit: sha, preview: true, backend: !mockApi, mockApi, ui: "/ui/" }, null, 2) + "\n");
     return output;
   } finally { await rm(scratch, { recursive: true, force: true }); }
 }

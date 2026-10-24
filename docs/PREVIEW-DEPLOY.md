@@ -1,11 +1,10 @@
 # Статический preview и CD — F2
 
 Адреса: https://digital-hustle.ru/ и https://digital-hustle.ru/ui/; IP https://45.146.165.12/ также работает.
-Это интерфейс и витрина компонентов. Backend ещё не подключён; `/api/*` возвращает
-503 ProblemDetail. Для публичного просмотра по команде владельца включён
-деморежим: PREVIEW_MOCK_API=1, deployment.mockApi=true. Запросы существующих
-экранов обрабатываются только в памяти вкладки; реальный API не вызывается.
-Обычная сборка моки не включает. Отключение и cutover — [PREVIEW-MOCKS](PREVIEW-MOCKS.md).
+Это интерфейс и витрина компонентов. Backend подключён: `/api/*` проксируется в реальный
+Gateway (Auth/Profile, Orchestrator, PreProcessor). Деморежим выключен: PREVIEW_MOCK_API=0,
+deployment.mockApi=false, backend=true; экраны ходят в настоящий API. Обычная сборка моки
+не включает. Cutover и откат — [PREVIEW-MOCKS](PREVIEW-MOCKS.md).
 CD этого этапа не устанавливает приложения и БД.
 
 ## Автоматическая публикация
@@ -24,13 +23,16 @@ SSH использует strict host checking, batch mode и только это
 
 Сборка в чистом checkout Node 24/pnpm 10.34.7 создаёт `dist/preview/{web,ui}`.
 Скрытые файлы, symlinks и неожиданные типы отклоняются; sourcemaps не упаковываются.
-`web/deployment.json` содержит точный frontend SHA, preview=true, backend=false.
+`web/deployment.json` содержит точный frontend SHA, preview=true, backend=true, mockApi=false.
 Релиз загружается во временный уникальный каталог, затем становится неизменяемым:
 `/opt/zapas/releases/<sha>`. `current` переключается атомарным rename symlink.
 
 После переключения проверяются доверенный TLS, версия, `/login`, `/ui/`, `/healthz`,
 security headers, cache policy, JS assets, закрытые `.env/.git/internal/actuator`,
-отсутствие sourcemaps и ожидаемый API 503. Ошибка возвращает предыдущий релиз и
+отсутствие sourcemaps, CSRF bootstrap настоящего Gateway (200 JSON, cookie
+`__Host-cashflow-csrf` с Secure/HttpOnly, `Cache-Control: no-store`) и 401
+`application/problem+json` без сессии на защищённых маршрутах Orchestrator/Auth.
+Ошибка возвращает предыдущий релиз и
 оставляет deploy красным. Откат не перетирает чужое более позднее переключение.
 Предыдущие releases и данные не удаляются.
 Сетевой smoke использует системный curl с проверкой сертификата (без `-k`), как
@@ -80,8 +82,17 @@ SMTP TLS/login уже проверены предыдущим этапом; па
 файле. Отправка/доставка OTP и cookie-flow требуют реализации Auth/Gateway и
 сквозного теста. Frontend не отправляет письма и не имитирует backend.
 
-После подключения backend заменить проверку ожидаемого API 503 реальными health
-и интеграционными проверками. Статический smoke не подтверждает работу финансовых API.
+После подключения backend smoke проверяет реальные CSRF/401, но статический smoke
+не подтверждает работу финансовых API. Полный сквозной вход/CSV/расчёт требует
+отдельного интеграционного теста с валидной сессией.
+
+## Откат
+
+Автоматический: если smoke после переключения не проходит, publish возвращает
+предыдущий release и оставляет deploy красным. Ручной возврат на демо: вернуть
+`PREVIEW_MOCK_API: "1"` вместе с прежней версией smoke (проверка ожидаемого API 503)
+и выпустить main; затем переключить `/opt/zapas/preview/current` на прежний SHA.
+Не оставляй флаг `"1"` с новым smoke: он ожидает реальный Gateway и упадёт.
 
 Основа workflow: [GitHub workflow_run](https://docs.github.com/en/actions/reference/workflows-and-actions/events-that-trigger-workflows#workflow_run).
 Секрет настроен через [libsodium sealed box](https://docs.github.com/en/rest/guides/encrypting-secrets-for-the-rest-api).
