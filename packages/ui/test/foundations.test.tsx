@@ -16,6 +16,14 @@ const choose = (file: File) =>
     target: { files: [file] },
   });
 
+it("keeps the visible file label in its accessible name and exposes instructions as description", () => {
+  render(<Upload />);
+  const button = screen.getByRole("button", { name: "Выписка CSV", exact: true });
+  expect(button).toHaveTextContent("Выписка CSV");
+  expect(button).not.toHaveTextContent("Перетащите файл");
+  expect(button).toHaveAccessibleDescription(/Перетащите файл или нажмите Enter/u);
+});
+
 it("previews only an accepted file and allows clearing and choosing it again", async () => {
   render(<Upload />);
   const file = new File(["date,amount"], "bank.csv", { type: "text/csv" });
