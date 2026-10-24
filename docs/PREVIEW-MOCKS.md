@@ -42,6 +42,10 @@ pagination, UUID scope, VIEWER/archive guards, If-Match/409 и сохранен�
 payload/key при replay. Это проверка поведения интерфейса, не замена серверной
 авторизации. На уровне Caddy настоящий `/api/*` продолжает отвечать 503.
 
+Отдельно от деморежима есть Prism-мок схем (`pnpm contracts:mock`): он не хранит
+состояние и не изображает auth/CSRF/OTP — только примеры ответов контрактов для
+вёрстки. Разница и ограничения — [CONTRACT-MOCKS](CONTRACT-MOCKS.md).
+
 ## Удаление / переход на настоящий API
 
 1. Получить совместимые Gateway/Auth/Profile/Orchestrator/PreProcessor/Forecast,
