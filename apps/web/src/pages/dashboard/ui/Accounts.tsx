@@ -152,10 +152,10 @@ export function Accounts({
                 История и импорт CSV
               </Link>
               <Link
-                to={accountPath("payments", company.id, selected.data.id)}
+                to={accountPath("overview", company.id, selected.data.id)}
                 className={buttonVariants({ variant: "secondary", size: "sm" })}
               >
-                Операции счёта
+                Обзор и прогноз
               </Link>
             </div>
             <p className="text-muted-foreground mt-2 text-sm break-all">

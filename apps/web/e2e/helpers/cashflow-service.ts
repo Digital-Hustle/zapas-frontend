@@ -1,6 +1,6 @@
 import { type Page } from "@playwright/test";
 import { readFileSync } from "node:fs";
-import type { ForecastRs, BacktestRs } from "@zapas/api/orchestrator";
+import type { ForecastRs, BacktestRs, JobRs } from "@zapas/api/orchestrator";
 
 const forecastFixture = JSON.parse(
   readFileSync(
@@ -91,6 +91,14 @@ export async function service(page: Page, role = "OWNER") {
     jobReads: 0,
     conflict: false,
     failDashboard: false,
+    dashboardStatus: 200,
+    emptyDashboard: false,
+    forecastLost: false,
+    jobType: "DETECT_RECURRING" as JobRs["type"],
+    newForecast: null as ForecastRs | null,
+    forecastCompleted: false,
+    cancelled: false,
+    holdQueued: false,
   };
   const permissions = {
     canEditCompany: role === "OWNER",
@@ -101,8 +109,8 @@ export async function service(page: Page, role = "OWNER") {
     canRunForecast: role !== "VIEWER",
     canRunBacktest: role !== "VIEWER",
   };
-  const forecast = { ...forecastFixture, companyId, accountId };
-  const quality = { ...backtestFixture, companyId, accountId };
+  const forecast = { ...structuredClone(forecastFixture), companyId, accountId };
+  const quality = { ...structuredClone(backtestFixture), companyId, accountId };
   const settings = { accountId, forecast: forecast.settings, autoRecalculate: true, version: 1 };
   const recurring = {
     id: other,
@@ -207,22 +215,28 @@ export async function service(page: Page, role = "OWNER") {
         version: 1,
       });
     if (path.endsWith("/dashboard"))
-      return state.failDashboard
-        ? problem(503, "DEPENDENCY_UNAVAILABLE")
+      return state.failDashboard || state.dashboardStatus !== 200
+        ? problem(state.dashboardStatus !== 200 ? state.dashboardStatus : 503, "DEPENDENCY_UNAVAILABLE")
         : json({
             companyId,
             accountId,
             asOfDate: "2026-10-24",
             dataVersion: 1,
-            currentBalance: {
-              id: other,
-              accountId,
-              date: "2026-10-24",
-              balance: "100000.00",
-              source: "STATEMENT",
-              reason: null,
-            },
-            latestForecast: forecast,
+            currentBalance: state.emptyDashboard
+              ? null
+              : {
+                  id: other,
+                  accountId,
+                  date: "2026-10-24",
+                  balance: "100000.00",
+                  source: "STATEMENT",
+                  reason: null,
+                },
+            latestForecast: state.emptyDashboard
+              ? null
+              : state.forecastCompleted
+                ? state.newForecast
+                : forecast,
             latestBacktest: null,
             activeAlerts: [alert],
             upcomingPayments: plans,
@@ -262,13 +276,26 @@ export async function service(page: Page, role = "OWNER") {
       id: other,
       companyId,
       accountId,
-      type: "DETECT_RECURRING",
+      type: state.jobType,
       status: "QUEUED",
       progress: 0,
       resultId: null,
       error: null,
       createdAt: time,
     };
+    if (path.endsWith("/forecast-jobs")) {
+      state.jobType = "FORECAST";
+      state.newForecast = { ...forecast, id: "00000000-0000-4000-8000-000000000008", jobId: other };
+      if (state.forecastLost) {
+        state.forecastLost = false;
+        return route.abort("failed");
+      }
+      return json({ ...job, type: "FORECAST" }, 202);
+    }
+    if (path.endsWith(`/jobs/${other}/cancel`)) {
+      state.cancelled = true;
+      return json({ ...job, status: "CANCELLED" });
+    }
     if (path.endsWith("/recurring-detection-jobs")) {
       state.detectCalls++;
       if (state.detectLost) {
@@ -287,9 +314,23 @@ export async function service(page: Page, role = "OWNER") {
     }
     if (path.endsWith(`/jobs/${other}`) && method === "GET") {
       state.jobReads++;
+      if (state.jobReads > 2 && !state.failedJob && state.jobType === "FORECAST")
+        state.forecastCompleted = true;
       return json({
         ...job,
-        status: state.jobReads > 2 ? (state.failedJob ? "FAILED" : "SUCCEEDED") : "RUNNING",
+        status: state.cancelled
+          ? "CANCELLED"
+          : state.holdQueued
+            ? "QUEUED"
+            : state.jobReads > 2
+              ? state.failedJob
+                ? "FAILED"
+                : "SUCCEEDED"
+              : "RUNNING",
+        resultId:
+          state.jobReads > 2 && !state.failedJob && state.jobType === "FORECAST"
+            ? (state.newForecast?.id ?? null)
+            : null,
         error: state.failedJob
           ? { code: "INSUFFICIENT_HISTORY", traceId: "trace", detail: "private-financial-body" }
           : null,
@@ -449,8 +490,10 @@ export async function service(page: Page, role = "OWNER") {
     if (path.includes("/forecasts/") && path.includes("/gaps/"))
       return json({ forecastId: forecast.id, gap: forecast.gaps[0], factors: [], recommendations: [] });
     if (path.endsWith(`/forecasts/${forecast.id}`)) return json(forecast);
+    if (state.newForecast && path.endsWith(`/forecasts/${state.newForecast.id}`))
+      return json(state.newForecast);
     if (path.endsWith("/jobs")) return paged([]);
     return problem(404, "NOT_FOUND");
   });
-  return Object.assign(state, { recurring, plans, payments, allocations });
+  return Object.assign(state, { recurring, plans, payments, allocations, forecast });
 }
