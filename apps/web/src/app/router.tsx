@@ -7,6 +7,20 @@ export const router = createBrowserRouter([
   {
     element: <RootLayout />,
     children: [
+      ...(import.meta.env.VITE_PREVIEW_MOCKS === "1"
+        ? [
+            {
+              path: "/demo/forecast",
+              lazy: () =>
+                import("@/widgets/forecast-insights").then((m) => ({ Component: m.ForecastInsightsPreview })),
+            },
+            {
+              path: "/demo/jobs",
+              lazy: () =>
+                import("@/features/watch-calculation").then((m) => ({ Component: m.CalculationPreview })),
+            },
+          ]
+        : []),
       ...(import.meta.env.DEV
         ? [
             {

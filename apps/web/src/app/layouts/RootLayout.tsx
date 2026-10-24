@@ -5,6 +5,7 @@ import { setSessionLostHandler } from "@zapas/api";
 import { useQueryClient } from "@tanstack/react-query";
 import { resetPrivateSession, usePrivateQueries } from "@/entities/auth-profile";
 import { pageSwap } from "@zapas/tokens/motion";
+import { PreviewNotice } from "../preview/PreviewNotice.tsx";
 
 /** Уходящая страница держит последний кадр, пока проигрывается выход (иначе outlet сразу покажет новую). */
 function Frozen({ children }: { children: React.ReactNode }) {
@@ -47,24 +48,27 @@ export function RootLayout() {
   const key = location.pathname.split("/")[1] ?? "";
 
   return (
-    <AnimatePresence
-      mode="wait"
-      custom={dir}
-      initial={false}
-      onExitComplete={() => window.scrollTo({ top: back ? (scroll.get(location.key) ?? 0) : 0 })}
-    >
-      <motion.div
-        key={key}
+    <>
+      {import.meta.env.VITE_PREVIEW_MOCKS === "1" && <PreviewNotice />}
+      <AnimatePresence
+        mode="wait"
         custom={dir}
-        variants={pageSwap}
-        initial="initial"
-        animate="animate"
-        exit="exit"
-        onAnimationStart={() => scroll.set(location.key, window.scrollY)}
-        className="min-h-svh"
+        initial={false}
+        onExitComplete={() => window.scrollTo({ top: back ? (scroll.get(location.key) ?? 0) : 0 })}
       >
-        <Frozen>{outlet}</Frozen>
-      </motion.div>
-    </AnimatePresence>
+        <motion.div
+          key={key}
+          custom={dir}
+          variants={pageSwap}
+          initial="initial"
+          animate="animate"
+          exit="exit"
+          onAnimationStart={() => scroll.set(location.key, window.scrollY)}
+          className="min-h-svh"
+        >
+          <Frozen>{outlet}</Frozen>
+        </motion.div>
+      </AnimatePresence>
+    </>
   );
 }
