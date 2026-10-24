@@ -9,7 +9,9 @@ export type {
   AuthFailureKind,
 } from "./model/types.ts";
 export { AuthProfileProvider } from "./model/provider.tsx";
-export { useAuthPort } from "./model/context.ts";
+export { useAuthPort, usePrivateQueries } from "./model/context.ts";
 export { useProfile, useSessions, profileKeys } from "./api/queries.ts";
 export { sessionGate } from "./model/gate.ts";
 export { resetPrivateSession } from "./model/cache.ts";
+export { browserAuthPort } from "./api/adapter.ts";
+export { useSessionRecovery } from "./api/recovery.ts";

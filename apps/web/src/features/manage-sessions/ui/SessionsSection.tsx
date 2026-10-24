@@ -7,6 +7,8 @@ import {
   profileKeys,
   useAuthPort,
   useSessions,
+  useSessionRecovery,
+  usePrivateQueries,
   type BrowserSession,
 } from "@/entities/auth-profile";
 
@@ -20,7 +22,9 @@ export function SessionsSection({ onSessionEnded }: { onSessionEnded: () => Prom
   const id = useId();
   const port = useAuthPort();
   const client = useQueryClient();
+  const { setPrivateQueries } = usePrivateQueries();
   const query = useSessions();
+  const recovery = useSessionRecovery(onSessionEnded);
   const globalBusy = useIsMutating({ mutationKey: ["auth-profile"] }) > 0;
   const locked = useRef(false);
   const mounted = useRef(false);
@@ -65,6 +69,10 @@ export function SessionsSection({ onSessionEnded }: { onSessionEnded: () => Prom
         tone: "default",
       });
       if (!agreed || !isMounted()) return;
+      if (endsCurrent) {
+        setPrivateQueries(false);
+        await client.cancelQueries();
+      }
       await revoke.mutateAsync(session?.id ?? null);
       if (endsCurrent) await onSessionEnded();
       else if (isMounted()) {
@@ -72,10 +80,11 @@ export function SessionsSection({ onSessionEnded }: { onSessionEnded: () => Prom
         notify.success("Сессия завершена");
       }
     } catch (failure) {
-      if (!mounted.current) return;
       const issue = authIssue(failure);
       if (issue.kind === "session-expired") await onSessionEnded();
       else {
+        setPrivateQueries(true);
+        if (!mounted.current) return;
         setError(issue.message);
         notify.error(issue.message);
       }
@@ -124,6 +133,25 @@ export function SessionsSection({ onSessionEnded }: { onSessionEnded: () => Prom
         <p role="alert" className="text-danger mt-4">
           {error}
         </p>
+      )}
+      {((query.isError && authIssue(query.error).kind === "refresh-uncertain") ||
+        (revoke.isError && authIssue(revoke.error).kind === "refresh-uncertain")) && (
+        <Button
+          variant="secondary"
+          className="mt-3"
+          disabled={busy}
+          loading={recovery.isPending}
+          onClick={() =>
+            recovery.mutate(undefined, {
+              onSuccess: () => {
+                setError(null);
+                revoke.reset();
+              },
+            })
+          }
+        >
+          Обновить сессию
+        </Button>
       )}
       {query.data?.length === 0 && <p className="text-muted-foreground mt-4">Список сессий пуст.</p>}
       {query.data && query.data.length > 0 && (

@@ -1,5 +1,5 @@
 import { useQuery } from "@tanstack/react-query";
-import { useAuthPort } from "../model/context.ts";
+import { useAuthPort, usePrivateQueries } from "../model/context.ts";
 import { AuthProblem } from "../model/errors.ts";
 
 export const profileKeys = {
@@ -9,6 +9,7 @@ export const profileKeys = {
 
 export function useProfile() {
   const port = useAuthPort();
+  const { privateQueries } = usePrivateQueries();
   const readProfile =
     port?.readProfile ??
     ((_signal: AbortSignal) =>
@@ -16,7 +17,7 @@ export function useProfile() {
   return useQuery({
     queryKey: profileKeys.profile,
     queryFn: ({ signal }) => readProfile(signal),
-    enabled: Boolean(port),
+    enabled: Boolean(port) && privateQueries,
     retry: false,
     staleTime: 5 * 60_000,
   });
@@ -24,6 +25,7 @@ export function useProfile() {
 
 export function useSessions() {
   const port = useAuthPort();
+  const { privateQueries } = usePrivateQueries();
   const readSessions =
     port?.readSessions ??
     ((_signal: AbortSignal) =>
@@ -31,7 +33,7 @@ export function useSessions() {
   return useQuery({
     queryKey: profileKeys.sessions,
     queryFn: ({ signal }) => readSessions(signal),
-    enabled: Boolean(port),
+    enabled: Boolean(port) && privateQueries,
     retry: false,
   });
 }

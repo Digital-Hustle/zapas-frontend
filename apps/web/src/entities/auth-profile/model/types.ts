@@ -25,6 +25,7 @@ export type AuthFailureKind =
   | "code-attempts-exceeded"
   | "rate-limit"
   | "offline"
+  | "refresh-uncertain"
   | "unavailable"
   | "session-expired"
   | "session-not-found"
@@ -46,9 +47,10 @@ export interface AuthProfilePort {
     code: string,
   ) => Promise<{ profile: AuthProfile; sessionId: string }>;
   readProfile: (signal: AbortSignal) => Promise<AuthProfile>;
-  saveProfile: (value: { displayName: string | null; version: number }) => Promise<AuthProfile>;
+  saveProfile: (value: { displayName: string; version: number }) => Promise<AuthProfile>;
   readSessions: (signal: AbortSignal) => Promise<readonly BrowserSession[]>;
   revokeSession: (id: string) => Promise<void>;
   revokeAllSessions: () => Promise<void>;
   logout: () => Promise<void>;
+  recoverSession: () => Promise<void>;
 }

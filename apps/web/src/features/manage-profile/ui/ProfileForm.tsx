@@ -1,14 +1,15 @@
 import { useEffect, useId, useRef, useState } from "react";
-import { Controller, useForm, useWatch } from "react-hook-form";
+import { Controller, useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useIsMutating, useMutation, useQuery } from "@tanstack/react-query";
 import type { z } from "zod";
-import { Button, Checkbox, Field, Input, notify } from "@zapas/ui";
+import { Button, Field, Input, notify } from "@zapas/ui";
 import {
   AuthProblem,
   authIssue,
   profileSchema,
   useAuthPort,
+  useSessionRecovery,
   type AuthProfile,
 } from "@/entities/auth-profile";
 
@@ -32,6 +33,7 @@ export function ProfileForm({
   const [conflict, setConflict] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
   const busy = useIsMutating({ mutationKey: ["auth-profile"] }) > 0;
+  const recovery = useSessionRecovery(onExpired);
   useEffect(() => {
     mounted.current = true;
     return () => {
@@ -40,9 +42,8 @@ export function ProfileForm({
   }, []);
   const form = useForm<z.infer<typeof profileSchema>>({
     resolver: zodResolver(profileSchema),
-    defaultValues: { displayName: profile.displayName, version: profile.version },
+    defaultValues: { displayName: profile.displayName ?? "", version: profile.version },
   });
-  const noName = useWatch({ control: form.control, name: "displayName" }) === null;
   const current = useQuery({
     queryKey: ["auth-profile", "conflict", profile.id],
     enabled: false,
@@ -67,7 +68,7 @@ export function ProfileForm({
     try {
       const saved = await save.mutateAsync(value);
       if (mounted.current) {
-        form.reset({ displayName: saved.displayName, version: saved.version });
+        form.reset({ displayName: saved.displayName ?? "", version: saved.version });
         onSaved(saved);
         notify.success("Имя сохранено");
       }
@@ -94,7 +95,7 @@ export function ProfileForm({
   const choose = (keepDraft: boolean) => {
     if (!current.data || current.isFetching || current.isError) return;
     if (keepDraft) form.setValue("version", current.data.version, { shouldDirty: true });
-    else form.reset({ displayName: current.data.displayName, version: current.data.version });
+    else form.reset({ displayName: current.data.displayName ?? "", version: current.data.version });
     setConflict(false);
     setMessage("Нажмите «Сохранить имя», чтобы подтвердить изменение.");
   };
@@ -122,8 +123,7 @@ export function ProfileForm({
               <Input
                 id={`${id}-name`}
                 {...field}
-                value={field.value ?? ""}
-                disabled={busy || noName}
+                disabled={busy}
                 autoComplete="name"
                 invalid={Boolean(fieldState.error)}
                 aria-describedby={fieldState.error ? `${id}-name-error` : undefined}
@@ -131,20 +131,25 @@ export function ProfileForm({
             </Field>
           )}
         />
-        <label htmlFor={`${id}-null`} className="flex items-center gap-3 text-sm">
-          <Checkbox
-            id={`${id}-null`}
-            checked={noName}
+        {((save.isError && authIssue(save.error).kind === "refresh-uncertain") ||
+          (current.isError && authIssue(current.error).kind === "refresh-uncertain")) && (
+          <Button
+            variant="secondary"
+            className="w-fit"
             disabled={busy}
-            onCheckedChange={(value) =>
-              form.setValue("displayName", value === true ? null : "", {
-                shouldDirty: true,
-                shouldValidate: true,
+            loading={recovery.isPending}
+            onClick={() =>
+              recovery.mutate(undefined, {
+                onSuccess: () => {
+                  save.reset();
+                  setMessage("Сессия обновлена. Проверьте форму и сохраните имя ещё раз.");
+                },
               })
             }
-          />
-          Не указывать имя
-        </label>
+          >
+            Обновить сессию
+          </Button>
+        )}
         {message && (
           <p role="status" className="text-muted-foreground text-sm">
             {message}

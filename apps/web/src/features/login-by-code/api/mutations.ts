@@ -1,5 +1,5 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { AuthProblem, resetPrivateSession, useAuthPort } from "@/entities/auth-profile";
+import { AuthProblem, resetPrivateSession, useAuthPort, usePrivateQueries } from "@/entities/auth-profile";
 
 export function useRequestCode() {
   const port = useAuthPort();
@@ -16,6 +16,7 @@ export function useRequestCode() {
 export function useVerifyCode() {
   const port = useAuthPort();
   const client = useQueryClient();
+  const { setPrivateQueries } = usePrivateQueries();
   return useMutation({
     mutationKey: ["auth-profile", "verify"],
     retry: false,
@@ -25,6 +26,7 @@ export function useVerifyCode() {
     },
     onSuccess: async ({ profile }) => {
       await resetPrivateSession(client, profile);
+      setPrivateQueries(true);
     },
   });
 }

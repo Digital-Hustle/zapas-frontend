@@ -13,8 +13,8 @@ it("validates and trims email without changing the local-part case", () => {
   expect(emailSchema.safeParse("invalid").success).toBe(false);
 });
 
-it("allows an explicit null name, rejects whitespace, and preserves the server version", () => {
-  expect(profileSchema.parse({ displayName: null, version: 0 })).toEqual({ displayName: null, version: 0 });
+it("rejects null and whitespace in PUT and preserves the server version", () => {
+  expect(profileSchema.safeParse({ displayName: null, version: 0 }).success).toBe(false);
   expect(profileSchema.safeParse({ displayName: "   ", version: 0 }).success).toBe(false);
   expect(profileSchema.parse({ displayName: "Владелец", version: 7 }).version).toBe(7);
 });

@@ -17,7 +17,7 @@ const currentSession = "00000000-0000-4000-8000-000000000001";
 const exampleProfile: AuthProfile = {
   id: "00000000-0000-4000-8000-000000000010",
   email: "owner@example.test",
-  displayName: "Владелец",
+  displayName: null,
   version: 0,
 };
 const sessions: BrowserSession[] = [
@@ -174,6 +174,7 @@ export function AuthProfilePreview() {
           state.authenticated = false;
           state.sessions = state.sessions.filter((session) => !session.current);
         }),
+      recoverSession: () => run(authenticated),
     };
   }, []);
   return (

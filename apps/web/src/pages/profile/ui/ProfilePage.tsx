@@ -9,6 +9,7 @@ import {
   resetPrivateSession,
   useAuthPort,
   useProfile,
+  usePrivateQueries,
 } from "@/entities/auth-profile";
 import { ProfileForm } from "@/features/manage-profile";
 import { SessionsSection } from "@/features/manage-sessions";
@@ -18,14 +19,16 @@ export function ProfilePage({ loginPath = "/login" }: { loginPath?: string }) {
   const port = useAuthPort();
   const query = useProfile();
   const client = useQueryClient();
+  const { setPrivateQueries } = usePrivateQueries();
   const navigate = useNavigate();
   const locked = useRef(false);
   const [error, setError] = useState<string | null>(null);
   const busy = useIsMutating({ mutationKey: ["auth-profile"] }) > 0;
   const end = useCallback(async () => {
+    setPrivateQueries(false);
     await resetPrivateSession(client, null);
     void navigate(loginPath, { replace: true });
-  }, [client, navigate, loginPath]);
+  }, [client, navigate, loginPath, setPrivateQueries]);
   const logout = useMutation({
     mutationKey: ["auth-profile", "logout"],
     retry: false,
@@ -38,13 +41,16 @@ export function ProfilePage({ loginPath = "/login" }: { loginPath?: string }) {
     if (locked.current || busy) return;
     locked.current = true;
     setError(null);
+    setPrivateQueries(false);
     try {
+      await client.cancelQueries();
       await logout.mutateAsync();
       await end();
     } catch (failure) {
       const issue = authIssue(failure);
       if (issue.kind === "session-expired") await end();
       else {
+        setPrivateQueries(true);
         setError(issue.message);
         notify.error(issue.message);
       }

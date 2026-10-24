@@ -1,49 +1,55 @@
-# Auth/Profile — доменный порт F1
+# Auth/Profile — доменная граница F1
 
-Источник: hub abe85d7, AUTH_PROFILE_API / CLIENT_HANDOFF.
-F1 реализует формы/состояния и доменную границу. F2 предоставляет общий HTTP,
-CSRF/credentials/refresh и DTO нового namespace. После этой поставки F1 добавляет
-DTO→mapper→AuthProfilePort и подключает provider в App. Сейчас этого адаптера нет:
-production честно показывает недоступность, не обращается к legacy Auth.
+Источник: hub abe85d7, AUTH_PROFILE_API / CLIENT_HANDOFF. Production App подключает
+`browserAuthPort`: generated `@zapas/api/auth-profile` → mapper → доменные модели.
+React не получает wire DTO. Общий transport F2 отвечает за cookies/CSRF/refresh;
+F1 не добавляет fetch, альтернативные cookies или legacy fallback.
 
-## Граница адаптера
+## Данные и команды
 
-- `requestChallenge(email)` возвращает id, expiresAt/resendAt как абсолютный epoch ms,
-  подготовленный из UTC response. Код или demoCode не передаются. Длина всегда 6.
-- `verifyChallenge(id, code)` сохраняет ведущие нули; возвращает профиль и sessionId,
-  без JWT/refresh. Успех отменяет старые queries, очищает приватный кэш и записывает
-  новый профиль. Организации не берутся из Auth.
-- profile: id/email/displayName/version. Nullable displayName не превращается в name,
-  version только возвращается серверу, не инкрементируется клиентом.
-- sessions: id/createdAt/lastSeenAt/expiresAt/current, без выдуманных IP/устройств.
-  Текущую/все сессии и logout отличать от отзыва другой сессии.
-- Сопоставлять известные machine codes в `AuthProblem`: code-invalid, code-expired,
-  code-attempts-exceeded, rate-limit (retryAt абсолютный), profile-conflict,
-  session-expired только после окончательного 401, session-not-found, validation,
-  offline/unavailable. Unknown игнорирует технический текст и поля ошибки.
-- Bootstrap CSRF, HttpOnly/credentials include и refresh single-flight без сетевого
-  auto retry остаются обязанностью общего транспорта; F1 не добавляет fetch или
-  альтернативные cookies. После logout транспорт делает новый bootstrap.
+- challengeId и абсолютные UTC сроки превращаются в id/epoch ms. Код всегда строка
+  из шести ASCII-цифр с ведущими нулями; demoCode и подстановка OTP отсутствуют.
+- Успех verify отменяет старые queries, очищает приватный кэш и записывает новый
+  профиль. Организации и роли не берутся из Auth, их предоставляет Orchestrator.
+- Профиль: id/email/displayName/version. Начальное имя в ответе может быть null;
+  PUT требует непустую строку до 100 Unicode code points. Email не редактируется.
+  Версия берётся из сервера и не увеличивается клиентом.
+- Сессии: id/createdAt/lastSeenAt/expiresAt/current в серверном порядке, без
+  выдуманных IP и устройств. Отзыв текущей/всех и logout завершают приватный UI;
+  отзыв другой сессии только обновляет список.
+- Известные machine codes получают статические безопасные сообщения. Неизвестные
+  details/fields не показываются. Retry-After фиксируется как абсолютный deadline.
+  AbortError сохраняется для отмены Query, неверный DTO не выдаётся за валидные данные.
 
-## Реализованная UI-часть
+## Формы и восстановление
 
-RHF/zod email/OTP/profile; challengeId/абсолютные сроки, запрет повторной команды,
-истёкший/исчерпанный challenge требует нового. Нет подстановки OTP. Профиль при 409
-перечитывается отдельным Query, черновик сохраняется. Пользователь выбирает имя,
-затем явно подтверждает новое сохранение. Нет слепого retry PUT.
+RHF/zod, запрет двойного submit, абсолютные таймеры, истёкший или исчерпанный challenge
+требует нового. Ошибка поля остаётся под ним, ошибка операции — в UI и notify.
+При 409 профиль перечитывается отдельным Query, черновик сохраняется. Пользователь
+выбирает имя и отдельно подтверждает сохранение новой версии. Слепого retry PUT нет.
 
-Read-only email, nullable имя, общий pending для Auth-мутаций, persistent errors,
-notify и сессии с UI-kit confirm. Успешный выход/отзыв текущей/всех очищает queries;
-outage сохраняет профиль и черновик. Guard отличает missing adapter/pending/outage
-от подтверждённой потери сессии. Endless skeleton и старый Auth.me удалены.
+Outage сохраняет профиль и черновик. Неопределённый refresh не разлогинивает и не
+ротируется автоматически: «Обновить сессию» явно вызывает recovery общего SDK,
+перечитывает данные, но не отправляет форму повторно. Подтверждённый refresh 401
+очищает приватный кэш и возвращает ко входу.
 
-## Проверка
+Во время выхода/отзыва текущей или всех сессий приватные Query отключены и отменены.
+Это не позволяет уходящей анимированной странице запустить refresh после logout,
+когда общий transport очистит кэш. При неудачном выходе Query включаются снова,
+форма остаётся смонтирована с прежним черновиком. Следующий успешный вход разрешает
+новые приватные запросы после очистки кэша и установки нового профиля.
 
-`pnpm dev`, `/dev/auth-profile/login` — отдельный QueryClient и локальный порт,
-явная метка примера. Обычный режим принимает любые шесть цифр только для проверки
-UI; OTP не выдаётся, email не отправляется, API не вызывается. Витрина исключена
-из исполняемой production сборки. Это не проверка Gateway/CSRF/SMTP/JWT.
+## Проверка и границы
 
-Доказательства — apps/web/evidence/T-CLIENT-01-auth-profile. Общий danger hover
-F2 имеет подтверждённый дефект контраста; F1 использует существующие default
-confirm и secondary button, без изменения shared UI/токенов.
+Playwright `auth-profile-http.spec.ts` перехватывает HTTP и проверяет настоящий SDK:
+bootstrap/CSRF, verify, version conflict, sessions/logout, отсутствие legacy/identity
+headers и повторной ротации, явный recovery и окончательный 401. Это контрактные
+fixtures, а не подтверждение Gateway/SMTP/JWT на работающем backend.
+
+`/dev/auth-profile/login` — отдельный QueryClient и локальный порт, явная метка
+«Смоделированный пример». Принимает любые шесть цифр только для проверки UI;
+OTP не выдаётся, email не отправляется, HTTP не вызывается. Dev-витрина исключена
+из исполняемой production сборки. Evidence: apps/web/evidence/T-CLIENT-01-auth-profile.
+
+Общий danger hover имеет подтверждённый дефект контраста; F1 использует существующие
+default confirm и secondary Button без изменения shared UI/токенов.

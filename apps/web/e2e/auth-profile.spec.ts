@@ -25,24 +25,38 @@ async function audit(page: Page) {
   expect(result.violations.filter(({ impact }) => impact === "serious" || impact === "critical")).toEqual([]);
 }
 
-test("unconfigured login does not use legacy endpoints or expose a code", async ({ page }) => {
+test("login uses the v1 SDK and keeps a failed bootstrap visible without exposing a code", async ({
+  page,
+}) => {
   const api: string[] = [];
   await page.route("**/api/v1/**", async (route) => {
     api.push(new URL(route.request().url()).pathname);
-    await route.abort();
+    await route.fulfill({
+      status: 503,
+      contentType: "application/problem+json",
+      body: JSON.stringify({
+        status: 503,
+        code: "DEPENDENCY_UNAVAILABLE",
+        detail: "private-server-message",
+      }),
+    });
   });
   await page.goto("/login");
-  await expect(page.getByRole("heading", { name: "Вход в Запас" })).toBeVisible();
-  await expect(page.getByText("Сервис входа пока недоступен.", { exact: true })).toBeVisible();
-  await expect(page.getByRole("button", { name: "Получить код", exact: true })).toHaveCount(0);
-  expect(api).toEqual([]);
+  await page.getByLabel("Рабочая почта", { exact: true }).fill("owner@example.test");
+  await page.getByRole("button", { name: "Получить код", exact: true }).click();
+  await expect(
+    page.getByRole("alert").filter({ hasText: "Сервис временно недоступен." }).first(),
+  ).toBeVisible();
+  await expect(page.getByRole("textbox", { name: "Код из письма, шесть цифр", exact: true })).toHaveCount(0);
+  await expect(page.getByText("private-server-message")).toHaveCount(0);
+  expect(api).toEqual(["/api/v1/auth-profile/auth/csrf"]);
 });
 
 for (const width of [360, 768, 1440]) {
   for (const colorScheme of ["light", "dark"] as const) {
     test.describe(`auth ${width}px ${colorScheme}`, () => {
       test.use({ viewport: { width, height: 1000 }, colorScheme, reducedMotion: "reduce" });
-      test("login, nullable name, session confirmation and logout work with keyboard and axe", async ({
+      test("login, initial null name, required PUT name and sessions work with keyboard and axe", async ({
         page,
       }, testInfo) => {
         const api: string[] = [];
@@ -67,16 +81,17 @@ for (const width of [360, 768, 1440]) {
         await page.getByRole("button", { name: "Войти", exact: true }).click({ clickCount: 2 });
         await expect(page).toHaveURL(/\/dev\/auth-profile\/profile$/);
         await expect(page.getByText("Проверок кода: 1", { exact: true })).toBeVisible();
-        await page.getByRole("checkbox", { name: "Не указывать имя", exact: true }).click();
-        await expect(page.getByLabel("Имя", { exact: true })).toBeDisabled();
+        await expect(page.getByLabel("Имя", { exact: true })).toHaveValue("");
         await page.getByRole("button", { name: "Сохранить имя", exact: true }).click();
-        await expect(page.getByText("Сохранений: 1", { exact: true })).toBeVisible();
-        await page.getByRole("checkbox", { name: "Не указывать имя", exact: true }).click();
+        await expect(
+          page.getByText("Имя: от 1 до 100 символов, не только пробелы", { exact: true }),
+        ).toBeVisible();
+        await expect(page.getByText("Сохранений: 0", { exact: true })).toBeVisible();
         await page.getByLabel("Имя", { exact: true }).fill("Анна");
         const save = page.getByRole("button", { name: "Сохранить имя", exact: true });
         await save.focus();
         await page.keyboard.press("Enter");
-        await expect(page.getByText("Сохранений: 2", { exact: true })).toBeVisible();
+        await expect(page.getByText("Сохранений: 1", { exact: true })).toBeVisible();
         await page.getByRole("button", { name: "Завершить сессию 2", exact: true }).click();
         const dialog = page.getByRole("dialog", { name: "Завершить эту сессию?", exact: true });
         await expect(dialog).toBeVisible();

@@ -3,7 +3,7 @@ import { AnimatePresence, motion, useIsPresent } from "motion/react";
 import { NavigationType, useLocation, useNavigate, useNavigationType, useOutlet } from "react-router";
 import { setSessionLostHandler } from "@zapas/api";
 import { useQueryClient } from "@tanstack/react-query";
-import { resetPrivateSession } from "@/entities/auth-profile";
+import { resetPrivateSession, usePrivateQueries } from "@/entities/auth-profile";
 import { pageSwap } from "@zapas/tokens/motion";
 
 /** Уходящая страница держит последний кадр, пока проигрывается выход (иначе outlet сразу покажет новую). */
@@ -22,21 +22,22 @@ export function RootLayout() {
   const outlet = useOutlet();
   const navigate = useNavigate();
   const client = useQueryClient();
+  const { setPrivateQueries } = usePrivateQueries();
   const back = navType === NavigationType.Pop;
   const dir = back ? -1 : 1;
 
   useEffect(() => {
-    setSessionLostHandler(
-      () =>
-        void resetPrivateSession(client, null).then(() =>
-          navigate("/login", {
-            replace: true,
-            state: { from: location.pathname },
-          }),
-        ),
-    );
+    setSessionLostHandler(() => {
+      setPrivateQueries(false);
+      void resetPrivateSession(client, null).then(() =>
+        navigate("/login", {
+          replace: true,
+          state: { from: location.pathname },
+        }),
+      );
+    });
     return () => setSessionLostHandler(() => undefined);
-  }, [navigate, location.pathname, client]);
+  }, [navigate, location.pathname, client, setPrivateQueries]);
 
   useLayoutEffect(() => {
     history.scrollRestoration = "manual";
