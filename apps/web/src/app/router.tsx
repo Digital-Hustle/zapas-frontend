@@ -52,6 +52,10 @@ export const router = createBrowserRouter([
         element: <RequireAuth />,
         children: [
           {
+            path: "/app/settings",
+            lazy: () => import("@/pages/cashflow").then((m) => ({ Component: m.SettingsPage })),
+          },
+          {
             path: "/app/alerts",
             lazy: () => import("@/pages/cashflow").then((m) => ({ Component: m.AlertsPage })),
           },

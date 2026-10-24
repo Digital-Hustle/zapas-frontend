@@ -91,6 +91,13 @@ export async function service(page: Page, role = "OWNER") {
   const state = {
     requests: [] as { path: string; method: string; body: unknown; headers: Record<string, string> }[],
     planVersion: 1,
+    settingsStatus: 200,
+    settingsConflict: false,
+    settingsLost: false,
+    membersStatus: 200,
+    memberConflict: false,
+    memberLost: false,
+    completenessLost: false,
     alertsStatus: 200,
     alertsPaged: false,
     alertConflict: false,
@@ -156,6 +163,9 @@ export async function service(page: Page, role = "OWNER") {
     detectorVersion: "v1",
     version: 1,
   };
+  const members = [{ userId: other, role: "OWNER", joinedAt: time, version: 1 }];
+  const completeness: Record<string, unknown>[] = [];
+  const settingsReplies = new Map<string, unknown>();
   const plans: Record<string, unknown>[] = [];
   const payments: Record<string, unknown>[] = [];
   const allocations: Record<string, unknown>[] = [];
@@ -507,9 +517,19 @@ export async function service(page: Page, role = "OWNER") {
       return json({ createdCount: rows.length, updatedCount: 0, unchangedCount: 0, items: rows });
     }
     if (path.endsWith("/payments")) return paged(payments);
-    if (path.endsWith("/settings") && method === "GET") return json(settings);
+    if (path.endsWith("/settings") && method === "GET")
+      return state.settingsStatus === 200 ? json(settings) : problem(state.settingsStatus, "UNAVAILABLE");
     if (path.endsWith("/settings") && method === "PUT") {
+      if (state.settingsConflict) {
+        state.settingsConflict = false;
+        settings.version++;
+        return problem(409, "VERSION_CONFLICT");
+      }
       Object.assign(settings, body, { version: settings.version + 1 });
+      if (state.settingsLost) {
+        state.settingsLost = false;
+        return route.abort("failed");
+      }
       return json(settings);
     }
     if (path.endsWith("/alerts") && method === "GET") {
@@ -580,8 +600,35 @@ export async function service(page: Page, role = "OWNER") {
         page: { page: number, size: 1, total: 2, hasNext: number === 0 },
       });
     }
-    if (path.endsWith("/members"))
-      return paged([{ userId: other, role: "OWNER", joinedAt: time, version: 1 }]);
+    if (path.endsWith("/members") && method === "GET")
+      return state.membersStatus === 200 ? paged(members) : problem(state.membersStatus, "UNAVAILABLE");
+    if (path.endsWith("/members") && method === "POST") {
+      const key = headers["idempotency-key"] ?? "";
+      if (settingsReplies.has(key)) return json(settingsReplies.get(key), 201);
+      const member = { userId: String(body.userId), role: String(body.role), joinedAt: time, version: 1 };
+      members.push(member);
+      settingsReplies.set(key, member);
+      if (state.memberLost) {
+        state.memberLost = false;
+        return route.abort("failed");
+      }
+      return json(member, 201);
+    }
+    if (path.includes("/members/") && ["PATCH", "PUT", "DELETE"].includes(method)) {
+      const member = members.find((item) => path.endsWith(`/members/${item.userId}`));
+      if (!member) return problem(404, "NOT_FOUND");
+      if (state.memberConflict) {
+        state.memberConflict = false;
+        member.version++;
+        return problem(409, "VERSION_CONFLICT");
+      }
+      if (method === "DELETE") {
+        members.splice(members.indexOf(member), 1);
+        return route.fulfill({ status: 204 });
+      }
+      Object.assign(member, body, { version: member.version + 1 });
+      return json(member);
+    }
     if (path.endsWith("/data-quality"))
       return json({
         accountId,
@@ -594,7 +641,19 @@ export async function service(page: Page, role = "OWNER") {
         emptyPurposeCount: 0,
         warnings: [],
       });
-    if (path.endsWith("/completeness-ranges")) return paged([]);
+    if (path.endsWith("/completeness-ranges") && method === "GET") return paged(completeness);
+    if (path.endsWith("/completeness-ranges") && method === "POST") {
+      const key = headers["idempotency-key"] ?? "";
+      if (settingsReplies.has(key)) return json(settingsReplies.get(key), 201);
+      const value = { ...body, id: other, accountId, createdAt: time };
+      completeness.push(value);
+      settingsReplies.set(key, value);
+      if (state.completenessLost) {
+        state.completenessLost = false;
+        return route.abort("failed");
+      }
+      return json(value, 201);
+    }
     if (path.includes("/forecasts/") && path.includes("/gaps/"))
       return json({ forecastId: forecast.id, gap: forecast.gaps[0], factors: [], recommendations: [] });
     if (path.endsWith(`/forecasts/${forecast.id}`)) return json(forecast);
@@ -616,5 +675,17 @@ export async function service(page: Page, role = "OWNER") {
     }
     return problem(404, "NOT_FOUND");
   });
-  return Object.assign(state, { recurring, plans, payments, allocations, forecast, quality, alert, alerts });
+  return Object.assign(state, {
+    recurring,
+    plans,
+    payments,
+    allocations,
+    forecast,
+    quality,
+    alert,
+    alerts,
+    settings,
+    members,
+    completeness,
+  });
 }
