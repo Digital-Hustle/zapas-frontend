@@ -45,6 +45,12 @@ const fieldMessages: Readonly<Record<string, string>> = {
   categoryCode: "Выберите доступную категорию",
   amount: "Введите сумму больше нуля, до 17 цифр и два знака после запятой",
   asOfDate: "Проверьте дату расчёта",
+  title: "Введите название платежа",
+  dueDate: "Выберите дату ожидаемого платежа",
+  counterpartyKey: "Выберите контрагента из истории",
+  recurringPatternId: "Выберите подтверждённую регулярность",
+  baselineCounterpartyKey: "Выберите контрагента для замены базового потока",
+  paymentId: "Выберите операцию из выписки",
 };
 export function mapBusinessFailure(error: unknown): BusinessIssue {
   if (error instanceof z.ZodError)

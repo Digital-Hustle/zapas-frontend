@@ -96,7 +96,7 @@ const planResponse = planFields.extend({
     .object({
       externalSystem: bounded(100),
       externalId: bounded(200),
-      documentNumber: bounded(200).nullable(),
+      documentNumber: bounded(100).nullable(),
       issuedDate: date.nullable(),
     })
     .nullable(),
@@ -647,15 +647,21 @@ export const externalRegisterSchema = z
             source: z.enum(["INVOICE", "TAX", "CONTRACT"]),
             sourceDocument: z
               .object({
-                externalSystem: title,
+                externalSystem: bounded(100).refine((value) => /\S/u.test(value), "Укажите источник"),
                 externalId: title,
-                documentNumber: bounded(200).nullable(),
+                documentNumber: bounded(100).nullable(),
                 issuedDate: date.nullable(),
               })
               .strict(),
             expectedVersion: versionSchema.nullable(),
           })
-          .strict(),
+          .strict()
+          .superRefine((value, context) => {
+            const relation = planDraftSchema.safeParse(planFields.parse(value));
+            if (!relation.success)
+              for (const issue of relation.error.issues)
+                context.addIssue({ code: "custom", path: issue.path, message: issue.message });
+          }),
       )
       .min(1)
       .max(500),

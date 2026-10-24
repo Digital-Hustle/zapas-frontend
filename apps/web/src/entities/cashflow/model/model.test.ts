@@ -11,6 +11,7 @@ import {
   mapQuality,
   mapActual,
   mapRecurring,
+  externalRegisterSchema,
 } from "./model.ts";
 
 const companyId = "00000000-0000-4000-8000-000000000001";
@@ -222,4 +223,23 @@ describe("history and schedules fail closed", () => {
     };
     expect(() => mapRecurring(rule, accountId)).toThrow();
   });
+});
+
+it("validates register replacement relations before a command is created", () => {
+  const item = {
+    ...draft,
+    accountId,
+    source: "INVOICE",
+    sourceDocument: { externalSystem: "ERP", externalId: "1", documentNumber: null, issuedDate: null },
+    expectedVersion: null,
+  };
+  expect(
+    externalRegisterSchema.safeParse({ externalSource: "INVOICE_REGISTER", items: [item] }).success,
+  ).toBe(true);
+  expect(
+    externalRegisterSchema.safeParse({
+      externalSource: "INVOICE_REGISTER",
+      items: [{ ...item, relation: "REPLACES_RECURRING" }],
+    }).success,
+  ).toBe(false);
 });

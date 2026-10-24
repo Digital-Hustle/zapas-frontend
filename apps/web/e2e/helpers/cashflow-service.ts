@@ -22,10 +22,64 @@ export const time = "2026-10-24T09:00:00Z";
 export const base = `/api/v1/orchestrator/companies/${companyId}`;
 export const url = (section: string) => `/app/${section}?company=${companyId}&account=${accountId}`;
 
+export function samplePlan(overrides: Record<string, unknown> = {}) {
+  return {
+    id: other,
+    companyId,
+    accountId,
+    title: "Аренда",
+    direction: "OUT",
+    amount: "150.00",
+    dueDate: "2026-10-01",
+    categoryCode: "RENT",
+    counterpartyKey: null,
+    note: null,
+    relation: "ADDITIONAL",
+    recurringPatternId: null,
+    baselineCounterpartyKey: null,
+    source: "MANUAL",
+    sourceDocument: null,
+    status: "OPEN",
+    settledAmount: "0.00",
+    remainingAmount: "150.00",
+    overdue: true,
+    version: 1,
+    knownAt: time,
+    createdAt: time,
+    updatedAt: time,
+    ...overrides,
+  };
+}
+export function samplePayment() {
+  return {
+    id: other,
+    companyId,
+    accountId,
+    importId: other,
+    externalOperationId: null,
+    operationDate: "2026-10-24",
+    amount: "1000.00",
+    direction: "OUT",
+    counterpartyInn: null,
+    counterpartyName: "Арендодатель",
+    purpose: "Оплата аренды",
+    categoryCode: "RENT",
+    categorySource: "USER",
+    ruleVersion: null,
+    balanceEod: null,
+    allocatedAmount: "0.00",
+    version: 1,
+    createdAt: time,
+  };
+}
+
 export async function service(page: Page, role = "OWNER") {
   const state = {
     requests: [] as { path: string; method: string; body: unknown; headers: Record<string, string> }[],
     planVersion: 1,
+    plansStatus: 200,
+    planLost: false,
+    allocationConflict: false,
     recurringConflict: false,
     recurringValidation: false,
     recurringLost: false,
@@ -67,6 +121,9 @@ export async function service(page: Page, role = "OWNER") {
     version: 1,
   };
   const plans: Record<string, unknown>[] = [];
+  const payments: Record<string, unknown>[] = [];
+  const allocations: Record<string, unknown>[] = [];
+  const planReplies = new Map<string, Record<string, unknown>>();
   const alert = {
     id: other,
     companyId,
@@ -187,7 +244,16 @@ export async function service(page: Page, role = "OWNER") {
       return json({ items: [{ date: "2026-10-24", balanceEod: "100000.00", status: "OBSERVED" }] });
     if (path.endsWith("/categories"))
       return json({ items: [{ code: "RENT", name: "Аренда", directions: ["OUT"], system: true }] });
-    if (path.endsWith("/counterparties")) return paged([]);
+    if (path.endsWith("/counterparties"))
+      return paged([
+        {
+          key: "inn:123",
+          inn: "1234567890",
+          name: "Арендодатель",
+          paymentCount: 4,
+          lastOperationDate: "2026-10-24",
+        },
+      ]);
     if (path.endsWith("/recurring-patterns") && method === "GET")
       return state.recurringStatus !== 200
         ? problem(state.recurringStatus, "UNAVAILABLE")
@@ -253,8 +319,14 @@ export async function service(page: Page, role = "OWNER") {
       }
       return json(recurring);
     }
-    if (path.endsWith("/expected-payments") && method === "GET") return paged(plans);
+    if (path.endsWith("/expected-payments") && method === "GET") {
+      if (state.plansStatus !== 200) return problem(state.plansStatus, "UNAVAILABLE");
+      const status = new URL(request.url()).searchParams.get("status");
+      return paged(status ? plans.filter((row) => row.status === status) : plans);
+    }
     if (path.endsWith("/expected-payments") && method === "POST") {
+      const replay = planReplies.get(headers["idempotency-key"] ?? "");
+      if (replay) return json(replay, 201);
       const value = {
         ...body,
         id: other,
@@ -272,6 +344,11 @@ export async function service(page: Page, role = "OWNER") {
         version: state.planVersion,
       };
       plans.push(value);
+      planReplies.set(headers["idempotency-key"] ?? "", value);
+      if (state.planLost) {
+        state.planLost = false;
+        return route.abort("failed");
+      }
       return json(value, 201);
     }
     if (path.endsWith(`/expected-payments/${other}`) && method === "GET")
@@ -287,8 +364,59 @@ export async function service(page: Page, role = "OWNER") {
       Object.assign(plan, body, { version: ++state.planVersion });
       return json(plan);
     }
-    if (path.endsWith("/allocations")) return paged([]);
-    if (path.endsWith("/payments")) return paged([]);
+    if (path.endsWith("/allocations") && method === "GET") return paged(allocations);
+    if (path.endsWith("/allocations") && method === "POST") {
+      if (state.allocationConflict) {
+        state.allocationConflict = false;
+        state.planVersion++;
+        return problem(409, "VERSION_CONFLICT");
+      }
+      const row = {
+        id: other,
+        expectedPaymentId: other,
+        paymentId: body.paymentId,
+        amount: body.amount,
+        createdAt: time,
+      };
+      allocations.push(row);
+      state.planVersion++;
+      Object.assign(plans[0] ?? {}, {
+        settledAmount: "50.00",
+        remainingAmount: "75.00",
+        status: "PARTIALLY_SETTLED",
+        version: state.planVersion,
+      });
+      return json(row, 201);
+    }
+    if (path.endsWith(`/allocations/${other}`) && method === "DELETE") {
+      allocations.length = 0;
+      state.planVersion++;
+      Object.assign(plans[0] ?? {}, {
+        settledAmount: "0.00",
+        remainingAmount: "150.00",
+        status: "OPEN",
+        version: state.planVersion,
+      });
+      return route.fulfill({ status: 204 });
+    }
+    if (path.endsWith(`/expected-payments/${other}/cancel`)) {
+      state.planVersion++;
+      Object.assign(plans[0] ?? {}, {
+        status: "CANCELLED",
+        remainingAmount: "0.00",
+        version: state.planVersion,
+      });
+      return json(plans[0]);
+    }
+    if (path.endsWith("/expected-payment-imports")) {
+      const items = (body.items ?? []) as Record<string, unknown>[];
+      const rows = items.map((item) =>
+        samplePlan({ ...item, source: item.source, sourceDocument: item.sourceDocument }),
+      );
+      plans.push(...rows);
+      return json({ createdCount: rows.length, updatedCount: 0, unchangedCount: 0, items: rows });
+    }
+    if (path.endsWith("/payments")) return paged(payments);
     if (path.endsWith("/settings") && method === "GET") return json(settings);
     if (path.endsWith("/settings") && method === "PUT") {
       Object.assign(settings, body, { version: settings.version + 1 });
@@ -324,5 +452,5 @@ export async function service(page: Page, role = "OWNER") {
     if (path.endsWith("/jobs")) return paged([]);
     return problem(404, "NOT_FOUND");
   });
-  return Object.assign(state, { recurring });
+  return Object.assign(state, { recurring, plans, payments, allocations });
 }
