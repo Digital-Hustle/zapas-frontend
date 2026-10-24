@@ -74,9 +74,9 @@ DESIGN §5 #15. F1 #9–#11 (график, риск/качество, jobs) пр
 с ними; конфликт маршрутов/статуса в #11 разрешён с сохранением всех витрин.
 Auth/Profile UI #12 смёржен после проверки с последним F2 слоем: формы/профиль/сессии используют SDK v1; реальные Gateway/SMTP пока не подключены.
 
-Текущий общий UI: 49 unit-тестов; вся frontend сборка после Auth/Profile: 120 unit-тестов. Витрина
+Текущий общий UI: 57 unit-тестов; вся frontend сборка после Auth/Profile/workspace: 126 unit-тестов. Витрина
 проверена в 12 сочетаниях размеров/тем/reduced motion, с открытыми popup/dialog
-и axe без нарушений; F1 e2e: 40. Контракты закреплены на abe85d7, генерация/guard
+и axe без нарушений; F1 e2e: 54. Контракты закреплены на abe85d7, генерация/guard
 и security проходят. API и примеры новых компонентов — packages/ui/README.md.
 
 CD статического main описан в [PREVIEW-DEPLOY](PREVIEW-DEPLOY.md). Релизы содержат
@@ -85,3 +85,5 @@ web/UI и точный deployment.json; закрытые пути и backend 503
 и Gateway/Auth конфигурации. Экранные DTO/порты, CRUD и сквозной пользовательский
 flow подключает F1 к готовому SDK; новый HTTP-клиент для этого не нужен.
 Старая админка/ML/SSE/what-if не являются обязательным scope архитектуры v1.
+
+Выбор/создание компаний и счетов из F1 #18 смёржены после разрешения конфликтов с Auth/Profile. Server pages, роли/архив, UUID scope, abort/late response, точные отрицательные суммы и стабильный POST replay проверены; управление/If-Match/архив/balance anchor продолжаются отдельно. Backend source уточнён: hack-2026-back; точные runtime gaps — BACKEND_RUNTIME_STATUS.md хаба.
