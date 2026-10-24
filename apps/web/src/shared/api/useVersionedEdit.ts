@@ -1,9 +1,8 @@
 import { useEffect, useRef, useState } from "react";
 import { useMutation, useQuery, type QueryKey } from "@tanstack/react-query";
 import { notify } from "@zapas/ui";
-import { businessIssue } from "@/shared/api/problem.ts";
-import { useCountdown } from "@/shared/lib/useCountdown.ts";
-import { usePermissionRefresh } from "./usePermissionRefresh.ts";
+import { businessIssue } from "./problem.ts";
+import { useCountdown } from "../lib/useCountdown.ts";
 
 export function useVersionedEdit<T, R extends { version: number }>({
   resource,
@@ -38,7 +37,6 @@ export function useVersionedEdit<T, R extends { version: number }>({
     mutationFn: (value: T) => write(value, version),
   });
   const issue = mutation.isError ? businessIssue(mutation.error) : null;
-  usePermissionRefresh(issue);
   const retryLeft = useCountdown(issue?.retryAt ?? null);
   const submit = async (value: T) => {
     if (locked.current || blocked || retryLeft > 0 || !active) return;

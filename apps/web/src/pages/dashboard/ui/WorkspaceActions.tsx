@@ -1,6 +1,7 @@
 import { useState, type ReactNode } from "react";
+import { Link } from "react-router";
 import { useIsMutating } from "@tanstack/react-query";
-import { Button } from "@zapas/ui";
+import { Button, buttonVariants } from "@zapas/ui";
 import { usePrivateQueries } from "@/entities/auth-profile";
 import { canWriteAccounts, type Company, type Account } from "@/entities/workspace";
 import { ArchiveForm, BalanceForm, EditAccountForm, EditCompanyForm } from "@/features/manage-workspace";
@@ -69,6 +70,12 @@ export function AccountActions({
   const writable = privateQueries && !stale && !account.archived && canWriteAccounts(company);
   return (
     <div className="mt-5 flex flex-wrap gap-3">
+      <Link
+        to={`/app/payments?company=${company.id}&account=${account.id}`}
+        className={buttonVariants({ variant: "secondary", size: "sm" })}
+      >
+        Операции и категории
+      </Link>
       {writable && (
         <>
           <Button variant="secondary" size="sm" disabled={busy} onClick={() => setAction("edit")}>
