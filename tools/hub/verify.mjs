@@ -4,11 +4,13 @@ import { readFileSync, readdirSync, statSync, existsSync } from "node:fs";
 import { createHash } from "node:crypto";
 import { join, relative, sep } from "node:path";
 import { root } from "../lib/run.mjs";
+import { auxiliaryPaths, contractPath } from "./sync-contracts.mjs";
 
 const manifestPath = join(root, "contracts", "manifest.json");
 const lockPath = join(root, "hub.lock.json");
 const problems = [];
-if (!existsSync(manifestPath)) problems.push("нет contracts/manifest.json — запустите node tools/hub/sync.mjs");
+if (!existsSync(manifestPath))
+  problems.push("нет contracts/manifest.json — запустите node tools/hub/sync.mjs");
 if (!existsSync(lockPath)) problems.push("нет hub.lock.json — запустите node tools/hub/sync.mjs");
 let manifest = { files: [] };
 if (existsSync(manifestPath)) {
@@ -20,6 +22,7 @@ if (existsSync(manifestPath)) {
   }
   if (!lock.hub || !lock.ref) problems.push("hub.lock.json: нужны hub и ref (commit SHA)");
   for (const f of manifest.files) {
+    contractPath(f.path);
     const p = join(root, f.path);
     if (!existsSync(p)) {
       problems.push(`нет файла ${f.path}`);
@@ -27,6 +30,19 @@ if (existsSync(manifestPath)) {
     }
     const sha = createHash("sha256").update(readFileSync(p)).digest("hex");
     if (sha !== f.sha256) problems.push(`изменён вручную: ${f.path}`);
+  }
+  for (const [path, digest] of Object.entries(lock.auxiliaryFiles ?? {})) {
+    if (!auxiliaryPaths.includes(path)) {
+      problems.push(`неизвестная конфигурация: ${path}`);
+      continue;
+    }
+    const absolute = join(root, path);
+    if (
+      !existsSync(absolute) ||
+      createHash("sha256").update(readFileSync(absolute)).digest("hex") !== digest
+    ) {
+      problems.push(`изменена конфигурация хаба: ${path}`);
+    }
   }
   const declared = new Set(manifest.files.map((f) => f.path));
   for (const dir of ["contracts/openapi", "contracts/events"]) {
@@ -44,4 +60,6 @@ if (problems.length) {
   console.error("✗ contracts sync:\n  " + problems.join("\n  "));
   process.exit(1);
 }
-console.log(`contracts sync: ${manifest.files.length} файлов совпадают с хабом ${JSON.parse(readFileSync(lockPath, "utf8")).ref.slice(0, 7)}`);
+console.log(
+  `contracts sync: ${manifest.files.length} файлов совпадают с хабом ${JSON.parse(readFileSync(lockPath, "utf8")).ref.slice(0, 7)}`,
+);

@@ -1,90 +1,306 @@
 {
   "schemaVersion": 1,
-  "description": "Zapas API/event contracts. Product repos pin this manifest by SHA-256 and a hub git ref.",
+  "description": "Zapas v1 HTTP API, client DTOs and examples. Product repos pin this manifest by SHA-256 and a hub git ref.",
   "files": [
     {
-      "path": "contracts/events/auth.company-created.v1.schema.json",
-      "sha256": "19df981b666c8abc3a49485070f1e49ed586c006356ee3fdde97e7cf82647a81"
+      "path": "contracts/clients/OrchestratorDtos.kt",
+      "sha256": "8f5e03ba0d8b1da8cce29ab5ef51d02d92ddc438235224853c52c324811e87d8"
     },
     {
-      "path": "contracts/events/auth.company-deleted.v1.schema.json",
-      "sha256": "81202762299102e5b2309867823b32c1e0cfd38311e26b5630abb96cc663c0ba"
+      "path": "contracts/clients/dto.ts",
+      "sha256": "0932a716fbbee20f743dc54c670c0d304ec8cecfead2731ce4b173af516e04f7"
     },
     {
-      "path": "contracts/events/auth.company-updated.v1.schema.json",
-      "sha256": "2283449efc4a3a661c4ac556b0c4cc6de0dc534655732d4aa156608a36a2f639"
+      "path": "contracts/examples/orchestrator/examples/acknowledgeAlert.json",
+      "sha256": "7b81a3fa12e9efa0a1ed1b63589e2b9cb62c293ce90308453f3f9fd4dd3a611e"
     },
     {
-      "path": "contracts/events/auth.mail-command.v1.schema.json",
-      "sha256": "8a7fc007c572e1e9ed679a7ad34e6fae3c5f4454759ece09741fd738ace44e62"
+      "path": "contracts/examples/orchestrator/examples/addMember.json",
+      "sha256": "c3f4cecb7ccd88f07297098874bcbc1ff26e9c45dc682d6cd49fc78922cc884f"
     },
     {
-      "path": "contracts/events/auth.member-invited.v1.schema.json",
-      "sha256": "ff826d37b4ca3f2cd304d99cfdc1c8848cbc07ed473290220697173f9f3d880c"
+      "path": "contracts/examples/orchestrator/examples/allocatePayment.json",
+      "sha256": "4d3d54f1da0dd7378cb4c1937afd539e3362343522b4b5f9c7226c16dcc2ee24"
     },
     {
-      "path": "contracts/events/envelope.schema.json",
-      "sha256": "bf2d3ac327cd665064276add273b7155576da9a80dd3b8583d06cb8de8e0380d"
+      "path": "contracts/examples/orchestrator/examples/archiveAccount.json",
+      "sha256": "555c61c499d871762633bf5c2325738403eebcd26a91eb2e8746f2c0e179e969"
     },
     {
-      "path": "contracts/events/events.json",
-      "sha256": "961de466db47beb1182b5fca0ed977605778da78f3562bec108ab336d46feea9"
+      "path": "contracts/examples/orchestrator/examples/archiveCompany.json",
+      "sha256": "3d09207f1b0c241953cb1ddcebc33b681839dc4e69b563f009931f05a8887622"
     },
     {
-      "path": "contracts/events/forecast.alert-raised.v1.schema.json",
-      "sha256": "b6478b641735e1106976af55fa38f16244082e055f10abf9be1f87a1a9bc7392"
+      "path": "contracts/examples/orchestrator/examples/bulkChangeCategory.json",
+      "sha256": "0343639fac1511a32a4c9a92c7655a6e9f9ad3a600fc6f30b5bdad6806160a97"
     },
     {
-      "path": "contracts/events/forecast.forecast-updated.v1.schema.json",
-      "sha256": "58ed5e2c9e15bcae477c971280157f3537c0b1a276956940c01c9cb12c134876"
+      "path": "contracts/examples/orchestrator/examples/cancelExpectedPayment.json",
+      "sha256": "caf83b4badea94fa0fcb33734613b6d0e0998f2195e7db44f9635198a981f4be"
     },
     {
-      "path": "contracts/events/ledger.categories-changed.v1.schema.json",
-      "sha256": "cfd6b5a1451f7e9d01b97d1411db0584ae65e79ba2c290d3fc32ed2344ec2b41"
+      "path": "contracts/examples/orchestrator/examples/cancelJob.json",
+      "sha256": "c352385de404eb264d82086b983ab8ed44f8871a95199b9bb04dd46428e120ff"
     },
     {
-      "path": "contracts/events/ledger.recurring-changed.v1.schema.json",
-      "sha256": "2f946173cd1be3caa0e3315846e2b5824d90218d08be678831dfa08abdda4e42"
+      "path": "contracts/examples/orchestrator/examples/changePaymentCategory.json",
+      "sha256": "fd8ede51b8fd6736148b77cb412257c4abc3f4ca147feddf98a74f0e18ede2b3"
     },
     {
-      "path": "contracts/events/ledger.transactions-imported.v1.schema.json",
-      "sha256": "a4b917ed591da51a3cfcb60f412c48095525f6f336544537ebac517d4e050044"
+      "path": "contracts/examples/orchestrator/examples/createAccount.json",
+      "sha256": "2436de1f1445b733810b4bb08130894b2aae1b43bc61eca65c60bd693c60079f"
     },
     {
-      "path": "contracts/events/planning.events-changed.v1.schema.json",
-      "sha256": "2d3e2e7cfee04e1613fe88464a991e9b91cbff14a004cb60f23ae7c877721115"
+      "path": "contracts/examples/orchestrator/examples/createBacktest.json",
+      "sha256": "a5b4ced6ec66546491690eed438a072429d26c985abad3de9380ff1fa9fa2a84"
     },
     {
-      "path": "contracts/events/planning.expected-payment-overdue.v1.schema.json",
-      "sha256": "98f1d81e696cd8bc29d48d0525bf7d8dead8ce8eaca20f8c49a5fd3cb8e054a2"
+      "path": "contracts/examples/orchestrator/examples/createBalanceAnchor.json",
+      "sha256": "ea52fc3a0644da34c87ce9e0a6edc0506d56fa08f669e280153ae0264ed6f355"
+    },
+    {
+      "path": "contracts/examples/orchestrator/examples/createCompany.json",
+      "sha256": "d31309af9f4fd0c5f6ca260a2c597ccaa5486c094d03c65378201895f5f2bb57"
+    },
+    {
+      "path": "contracts/examples/orchestrator/examples/createExpectedPayment.json",
+      "sha256": "db973d66638ac3fdeb6f08399e0a49532d4089458be4e9482de8b00b65a9c860"
+    },
+    {
+      "path": "contracts/examples/orchestrator/examples/createForecast.json",
+      "sha256": "7a0dd22974cc9f40d6b2f05620c8f08ba8b3cca3b5e79b80f001dad5501d899d"
+    },
+    {
+      "path": "contracts/examples/orchestrator/examples/detectRecurring.json",
+      "sha256": "73b40ebf2588392c94b44087586a6bdd2161c8da1b72cac22c8d4305d9a41d24"
+    },
+    {
+      "path": "contracts/examples/orchestrator/examples/forecast-risk-available.json",
+      "sha256": "7c45294db88814244c537443d0f0d33db38657814de0daa2ee005ecaa4585b73"
+    },
+    {
+      "path": "contracts/examples/orchestrator/examples/getAccount.json",
+      "sha256": "2436de1f1445b733810b4bb08130894b2aae1b43bc61eca65c60bd693c60079f"
+    },
+    {
+      "path": "contracts/examples/orchestrator/examples/getBacktest.json",
+      "sha256": "33cbce415865a7449e173845f3ea0637ac2d3b4e0a729cf7ac0950d88015fbb1"
+    },
+    {
+      "path": "contracts/examples/orchestrator/examples/getCapabilities.json",
+      "sha256": "4f05c02b79b454ab9edd067f21b55a927b43384a880d4a1e5f72fc7307a92994"
+    },
+    {
+      "path": "contracts/examples/orchestrator/examples/getCompany.json",
+      "sha256": "d31309af9f4fd0c5f6ca260a2c597ccaa5486c094d03c65378201895f5f2bb57"
+    },
+    {
+      "path": "contracts/examples/orchestrator/examples/getDailyActuals.json",
+      "sha256": "835bb80973e1fdb96ff65b61c7cb7ac226f72254c9c5d235af514ce609d06591"
+    },
+    {
+      "path": "contracts/examples/orchestrator/examples/getDashboard.json",
+      "sha256": "8db2a0c9a44334c611e414cf8866d3fe689395b058fe1f9ecdf29c664c695d3e"
+    },
+    {
+      "path": "contracts/examples/orchestrator/examples/getDataQuality.json",
+      "sha256": "e346bb6c1627c4bca82ec62797320c883e24879eab2392589d1b0cd31d38dba2"
+    },
+    {
+      "path": "contracts/examples/orchestrator/examples/getExpectedPayment.json",
+      "sha256": "db973d66638ac3fdeb6f08399e0a49532d4089458be4e9482de8b00b65a9c860"
+    },
+    {
+      "path": "contracts/examples/orchestrator/examples/getForecast.json",
+      "sha256": "f83476b73ba749a5f0ec83fd4438f3b32af7bef41653f5f9a7b50d501ff61a3f"
+    },
+    {
+      "path": "contracts/examples/orchestrator/examples/getGapDetails.json",
+      "sha256": "653c0e47884ec336b8e35ba12a096671cdea5afe5d4f254663e8b60f5e6eff68"
+    },
+    {
+      "path": "contracts/examples/orchestrator/examples/getImport.json",
+      "sha256": "3baad06f253fdd5600735301ef18eb2f4bbb5fd8b43163b42afb8b3289a5ea68"
+    },
+    {
+      "path": "contracts/examples/orchestrator/examples/getJob.json",
+      "sha256": "7a0dd22974cc9f40d6b2f05620c8f08ba8b3cca3b5e79b80f001dad5501d899d"
+    },
+    {
+      "path": "contracts/examples/orchestrator/examples/getLatestForecast.json",
+      "sha256": "f83476b73ba749a5f0ec83fd4438f3b32af7bef41653f5f9a7b50d501ff61a3f"
+    },
+    {
+      "path": "contracts/examples/orchestrator/examples/getPayment.json",
+      "sha256": "fd8ede51b8fd6736148b77cb412257c4abc3f4ca147feddf98a74f0e18ede2b3"
+    },
+    {
+      "path": "contracts/examples/orchestrator/examples/getSettings.json",
+      "sha256": "f66d57912b483eedfd5a679ab48b3ec83c466b9bdff9de711143279cccac3e8c"
+    },
+    {
+      "path": "contracts/examples/orchestrator/examples/importExpectedPayments.json",
+      "sha256": "e4dfc1927346f8cc16ed4f1fc6f6f7bed80fc768ad8a467901da42d20275c52b"
+    },
+    {
+      "path": "contracts/examples/orchestrator/examples/listAccounts.json",
+      "sha256": "b6a24c108381da3ccc3e4196fcefdc9e479f1ad90f9ab8aa2348b06172dfcd21"
+    },
+    {
+      "path": "contracts/examples/orchestrator/examples/listAlerts.json",
+      "sha256": "d2832c72f8bd864a1ed3554426cc6fc7a3f05f0e4445683586c666b56c686c93"
+    },
+    {
+      "path": "contracts/examples/orchestrator/examples/listAllocations.json",
+      "sha256": "b3ecb54ae3cb16883a5fc2be7494a4e28d37e0fd92a759d8918071cd1534f046"
+    },
+    {
+      "path": "contracts/examples/orchestrator/examples/listBacktestOrigins.json",
+      "sha256": "b3ecb54ae3cb16883a5fc2be7494a4e28d37e0fd92a759d8918071cd1534f046"
+    },
+    {
+      "path": "contracts/examples/orchestrator/examples/listBacktests.json",
+      "sha256": "b3ecb54ae3cb16883a5fc2be7494a4e28d37e0fd92a759d8918071cd1534f046"
+    },
+    {
+      "path": "contracts/examples/orchestrator/examples/listCategories.json",
+      "sha256": "0343639fac1511a32a4c9a92c7655a6e9f9ad3a600fc6f30b5bdad6806160a97"
+    },
+    {
+      "path": "contracts/examples/orchestrator/examples/listCompanies.json",
+      "sha256": "dec080f57212efc35408506cc3ae9a37fe7b5cdcbe744522dc9b51f3f1dc031e"
+    },
+    {
+      "path": "contracts/examples/orchestrator/examples/listCompleteness.json",
+      "sha256": "b3ecb54ae3cb16883a5fc2be7494a4e28d37e0fd92a759d8918071cd1534f046"
+    },
+    {
+      "path": "contracts/examples/orchestrator/examples/listCounterparties.json",
+      "sha256": "b3ecb54ae3cb16883a5fc2be7494a4e28d37e0fd92a759d8918071cd1534f046"
+    },
+    {
+      "path": "contracts/examples/orchestrator/examples/listExpectedPayments.json",
+      "sha256": "f4f6206bbe5f04d5ea0884c282364e50dbdd802ddaf3ea76dd8843db79b2ed9f"
+    },
+    {
+      "path": "contracts/examples/orchestrator/examples/listForecasts.json",
+      "sha256": "b3ecb54ae3cb16883a5fc2be7494a4e28d37e0fd92a759d8918071cd1534f046"
+    },
+    {
+      "path": "contracts/examples/orchestrator/examples/listImportIssues.json",
+      "sha256": "b3ecb54ae3cb16883a5fc2be7494a4e28d37e0fd92a759d8918071cd1534f046"
+    },
+    {
+      "path": "contracts/examples/orchestrator/examples/listImports.json",
+      "sha256": "b3ecb54ae3cb16883a5fc2be7494a4e28d37e0fd92a759d8918071cd1534f046"
+    },
+    {
+      "path": "contracts/examples/orchestrator/examples/listJobs.json",
+      "sha256": "b3ecb54ae3cb16883a5fc2be7494a4e28d37e0fd92a759d8918071cd1534f046"
+    },
+    {
+      "path": "contracts/examples/orchestrator/examples/listMembers.json",
+      "sha256": "b3ecb54ae3cb16883a5fc2be7494a4e28d37e0fd92a759d8918071cd1534f046"
+    },
+    {
+      "path": "contracts/examples/orchestrator/examples/listPayments.json",
+      "sha256": "b3ecb54ae3cb16883a5fc2be7494a4e28d37e0fd92a759d8918071cd1534f046"
+    },
+    {
+      "path": "contracts/examples/orchestrator/examples/listRecurring.json",
+      "sha256": "b3ecb54ae3cb16883a5fc2be7494a4e28d37e0fd92a759d8918071cd1534f046"
+    },
+    {
+      "path": "contracts/examples/orchestrator/examples/problem-version-conflict.json",
+      "sha256": "382893dbd9135654ab8c65a4eddc0150aa1c0ecd90021feb5f547015fd75ccbc"
+    },
+    {
+      "path": "contracts/examples/orchestrator/examples/setCompleteness.json",
+      "sha256": "7eaa78fd7bcc57009b1e7df743625c059f80bf5b5c5b2067d5fce0db6d933d2f"
+    },
+    {
+      "path": "contracts/examples/orchestrator/examples/updateAccount.json",
+      "sha256": "2436de1f1445b733810b4bb08130894b2aae1b43bc61eca65c60bd693c60079f"
+    },
+    {
+      "path": "contracts/examples/orchestrator/examples/updateCompany.json",
+      "sha256": "d31309af9f4fd0c5f6ca260a2c597ccaa5486c094d03c65378201895f5f2bb57"
+    },
+    {
+      "path": "contracts/examples/orchestrator/examples/updateExpectedPayment.json",
+      "sha256": "db973d66638ac3fdeb6f08399e0a49532d4089458be4e9482de8b00b65a9c860"
+    },
+    {
+      "path": "contracts/examples/orchestrator/examples/updateMember.json",
+      "sha256": "c3f4cecb7ccd88f07297098874bcbc1ff26e9c45dc682d6cd49fc78922cc884f"
+    },
+    {
+      "path": "contracts/examples/orchestrator/examples/updateRecurring.json",
+      "sha256": "9160170386f8f15424ac8886f8b60f4a7f4a85965b17c2bc59aee3e351c87c4e"
+    },
+    {
+      "path": "contracts/examples/orchestrator/examples/updateSettings.json",
+      "sha256": "f66d57912b483eedfd5a679ab48b3ec83c466b9bdff9de711143279cccac3e8c"
+    },
+    {
+      "path": "contracts/examples/orchestrator/request-examples/allocatePayment.json",
+      "sha256": "2c54ecf510e0d64cd9738f70e2a3e2e9fa589bc8a7a58b1b95592bf402c76a82"
+    },
+    {
+      "path": "contracts/examples/orchestrator/request-examples/changePaymentCategory.json",
+      "sha256": "92af8398afe42c85a88d8bc27604ced4a7f151597deda3ddc7b3b74d7716b276"
+    },
+    {
+      "path": "contracts/examples/orchestrator/request-examples/createAccount.json",
+      "sha256": "b211987d2d687bc3fba29d1d7662d7f56de5c17781b5fd0681a51a837ac4cbb4"
+    },
+    {
+      "path": "contracts/examples/orchestrator/request-examples/createBacktest.json",
+      "sha256": "a50ddca82dd0475dc44a240eab29c4b3b038f0dc1a973e9f32c3006f2fe9f24a"
+    },
+    {
+      "path": "contracts/examples/orchestrator/request-examples/createCompany.json",
+      "sha256": "bed0cb77e3e925defc3d078bb9b852bff8a45c466c17b37000750be325f9c122"
+    },
+    {
+      "path": "contracts/examples/orchestrator/request-examples/createExpectedPayment.json",
+      "sha256": "4182ee487fc1a1e9ee4e4d9aa63ad43baaf8c23a4d8247f8348a70481932226d"
+    },
+    {
+      "path": "contracts/examples/orchestrator/request-examples/createForecast.json",
+      "sha256": "2e37579c6fa8c92c9bb27ca6bc81e2fe1cf7cf54e373be18505d07e7a7d6e405"
+    },
+    {
+      "path": "contracts/examples/orchestrator/request-examples/updateSettings.json",
+      "sha256": "0300fb6587ed208a051a20a4f8b7d5acff1b5b4f901f74d47e63607946174480"
     },
     {
       "path": "contracts/openapi/_shared.yaml",
-      "sha256": "2edcb70a3d1c4f980c590991537821059fbfb5348cf70679e59caaa8f80af60a"
+      "sha256": "d03999457dd5a2283e70a5159fcd62dcf6ea8188f08c0233b6224696409b8d9a"
+    },
+    {
+      "path": "contracts/openapi/auth-profile.yaml",
+      "sha256": "00ae0fc958290ea91ec2810ab507eaf90ea36309981bbd38ff9457da24f3fe01"
     },
     {
       "path": "contracts/openapi/auth.yaml",
-      "sha256": "6326abd0944c898aff8f69c4f80d2cc0d9481b080177ffad73bb8aa4fc9eb4c9"
+      "sha256": "78f995538f4591a2dc89315f43c099473c7f46a4c28520b71382f38f6b9a4a20"
     },
     {
-      "path": "contracts/openapi/forecast-ml.yaml",
-      "sha256": "e9fdb8216088630b3fb4aa0ea9709815584da1961cc2faf70e64de7e127da863"
+      "path": "contracts/openapi/forecast-internal.openapi.yaml",
+      "sha256": "e13d3466d12b527efa34535b4152e739fbd7727c334617a297d9e431b472b4ce"
     },
     {
-      "path": "contracts/openapi/forecast.yaml",
-      "sha256": "0ac4366f35218aefc346c6a835c48b1f445aee7e26835657461223e719343c36"
+      "path": "contracts/openapi/orchestrator-internal.openapi.yaml",
+      "sha256": "60e1e5352d97cc418f2bcf3379d1bb23984de17490ca71f67becb676ba0e26ca"
     },
     {
-      "path": "contracts/openapi/ledger.yaml",
-      "sha256": "7116595f34c377c95d62e626be6e64b11b09fd3efcfbe14a321369e47bbd1a65"
+      "path": "contracts/openapi/orchestrator.openapi.yaml",
+      "sha256": "7509b8037a709f02d38b40f1c81d193e9317c2b0ca363e0c8cfb9481e2dd1d47"
     },
     {
-      "path": "contracts/openapi/notify.yaml",
-      "sha256": "81cbbd98c803bfad0bb57dd984da1c4ccca11ce22a98d255c8c4264def2da028"
-    },
-    {
-      "path": "contracts/openapi/planning.yaml",
-      "sha256": "89e074c23e336cb4ea0f1a3db333b1c06bdcafa492b194a188ecf57e58b15bd3"
+      "path": "contracts/openapi/preprocessor-upload.openapi.yaml",
+      "sha256": "524649096bc7b9bd6a21a56c1b2991df832e61ca9e1fc10d1670eaeafd580468"
     }
   ]
 }

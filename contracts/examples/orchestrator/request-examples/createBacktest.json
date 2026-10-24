@@ -1,0 +1,9 @@
+{
+  "accountId": "00000000-0000-4000-8000-000000000002",
+  "firstOrigin": "2026-04-01",
+  "lastOrigin": "2026-08-31",
+  "stepDays": 14,
+  "scope": "HISTORY_ONLY",
+  "windowWeeks": 12,
+  "evaluateRisk": true
+}

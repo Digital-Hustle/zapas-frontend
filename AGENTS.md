@@ -4,7 +4,7 @@
 
 ## Перед задачей
 1. Хаб: `docs/REPOS.md`, `docs/REQUIREMENTS.md`, `docs/SCREENS.md`, `docs/DESIGN.md`, `docs/WORKFLOW.md`, свой `docs/roles/<код>.md`.
-2. Скиллы: всегда `zapas-dev`; UI — `frontend-react`; API — `contracts-first`; ревью безопасности — `security-fintech`.
+2. Скиллы из текущего хаба (abe85d7): всегда `zapas-dev`; UI — `frontend-react`; API — `contracts-first`; ревью безопасности — `security-fintech`.
 3. `docs/DELIVERY.md` в хабе: не выдавай skeleton за реализованный экран.
 
 ## Зоны
@@ -36,3 +36,6 @@ node tools/hub/sync.mjs
 «Готово» = проверки зелёные, поведение проверено руками в 360/768/1440, светлой/тёмной темах, клавиатурой и reduced motion; PR с evidence.
 
 После merge: `git fetch --prune`, `main` ff-only, активную свою ветку — rebase. Не продолжать смёрженную ветку; удалять только свои подтверждённо смёрженные ветки (WORKFLOW §9).
+## Handoff v1 для F2
+
+Контракты закреплены в hub.lock.json на объединённом хабе PR #8/#9. Основной браузер: @zapas/api/auth-profile; бизнес-данные: @zapas/api/orchestrator; CSV: @zapas/api/preprocessor. Android/legacy — отдельный @zapas/api/auth. Новые клиенты используют browserHttp: CSRF из bootstrap в памяти, HttpOnly cookies, refresh single-flight без автоматического retry неопределённого результата. Внутренние endpoints и retired ledger/planning/notify/SSE не экспортируются. Переход экранов F1 описан в docs/F2-API-V1.md.

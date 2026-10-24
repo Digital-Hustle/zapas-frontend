@@ -1,0 +1,14 @@
+{
+  "accountId": "00000000-0000-4000-8000-000000000002",
+  "forecast": {
+    "windowWeeks": 12,
+    "horizonDays": 30,
+    "bufferAmount": "0.00",
+    "scenarioCount": 2000,
+    "minCalibrationOrigins": 12,
+    "calibrationStepDays": 7,
+    "algorithm": "WEEKDAY_MEAN_V1"
+  },
+  "autoRecalculate": true,
+  "version": 1
+}
