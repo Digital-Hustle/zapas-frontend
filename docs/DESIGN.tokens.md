@@ -143,3 +143,4 @@
 | `duration.spin` | 0.8 s |
 | `duration.skeleton` | 1.4 s |
 | `duration.tooltip` | 0.3 s |
+| `duration.caret` | 1.1 s |
