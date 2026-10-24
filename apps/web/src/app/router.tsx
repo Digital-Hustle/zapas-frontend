@@ -10,6 +10,11 @@ export const router = createBrowserRouter([
       ...(import.meta.env.DEV
         ? [
             {
+              path: "/dev/calculation-jobs",
+              lazy: () =>
+                import("@/features/watch-calculation").then((m) => ({ Component: m.CalculationPreview })),
+            },
+            {
               path: "/dev/forecast-insights",
               lazy: () =>
                 import("@/widgets/forecast-insights").then((m) => ({ Component: m.ForecastInsightsPreview })),
