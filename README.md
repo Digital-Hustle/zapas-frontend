@@ -9,11 +9,17 @@ Web-кабинет, админка, дизайн-система и API-клие�
 pnpm install --frozen-lockfile
 node tools/setup.mjs        # хуки, локальный конфиг git, .claude/skills
 pnpm dev                    # web на http://localhost:5173, проксирует /api на localhost:8080
-pnpm dev:mock               # web против Prism-моков контрактов (http://localhost:4010)
+pnpm dev:mock               # web против локального API-мока (см. docs/CONTRACT-MOCKS.md)
+pnpm contracts:mock         # только Prism-мок публичных контрактов на http://localhost:4010
+pnpm contracts:mock:web     # Prism + web одним процессом
 pnpm check                  # tokens, lint, typecheck, tests, build, contracts, security
 ```
 
-Требуется Node 24 и pnpm 10. Реальный backend не нужен для UI-работы: контракты синхронизированы из хаба, Prism отдаёт схемные ответы.
+Требуется Node 24.18+ и pnpm 10 (Prism требует Node >=24.18). Реальный backend не нужен для UI-работы:
+контракты синхронизированы из хаба. `contracts:mock` отдаёт схемные примеры четырёх публичных
+контрактов; auth, CSRF и сценарии с сохранением состояния покрывает встроенный preview API
+(`VITE_PREVIEW_MOCKS=1`). Мок не заменяет backend и не проверяет права доступа — подробности и
+ограничения в [docs/CONTRACT-MOCKS.md](docs/CONTRACT-MOCKS.md).
 
 ## Структура
 | Путь | Что | Владелец |
