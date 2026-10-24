@@ -32,6 +32,14 @@ export function accessDenied(error: unknown) {
   return ["forbidden", "not-found", "unauthorized"].includes(businessIssue(error).kind);
 }
 const fieldMessages: Readonly<Record<string, string>> = {
+  userId: "Укажите UUID зарегистрированного пользователя",
+  role: "Выберите роль участника",
+  "forecast.bufferAmount": "Запас должен быть неотрицательной суммой",
+  "forecast.windowWeeks": "Выберите 8, 10 или 12 недель",
+  "forecast.scenarioCount": "Введите целое число от 100 до 5000",
+  "forecast.minCalibrationOrigins": "Введите целое число от 12 до 100",
+  fromDate: "Проверьте начало периода",
+  toDate: "Проверьте конец периода",
   name: "Проверьте название",
   legalForm: "Выберите форму организации",
   inn: "ИНН: 10 или 12 цифр",

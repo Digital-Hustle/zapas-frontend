@@ -45,6 +45,7 @@ export function useVersionedEdit<T, R extends { version: number }>({
     try {
       const saved = await mutation.mutateAsync(value);
       if (mounted.current) {
+        setVersion(saved.version);
         onSaved(saved);
         notify.success("Изменения сохранены");
       }

@@ -171,8 +171,16 @@ const settings = z.object({
   windowWeeks: z.union([z.literal(8), z.literal(10), z.literal(12)]),
   horizonDays: z.literal(30),
   bufferAmount: nonnegativeMoney,
-  scenarioCount: z.number().int().min(100).max(5000),
-  minCalibrationOrigins: z.number().int().min(12).max(100),
+  scenarioCount: z
+    .number({ error: "Введите число от 100 до 5000" })
+    .int({ error: "Введите целое число" })
+    .min(100, "Минимум 100 сценариев")
+    .max(5000, "Максимум 5000 сценариев"),
+  minCalibrationOrigins: z
+    .number({ error: "Введите число от 12 до 100" })
+    .int({ error: "Введите целое число" })
+    .min(12, "Минимум 12 срезов")
+    .max(100, "Максимум 100 срезов"),
   calibrationStepDays: z.literal(7),
   algorithm: z.literal("WEEKDAY_MEAN_V1"),
 });
