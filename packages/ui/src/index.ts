@@ -21,6 +21,33 @@ export { MoneyInput, type MoneyInputProps } from "./components/MoneyInput.tsx";
 export { OtpInput, type OtpInputProps } from "./components/OtpInput.tsx";
 export { Select, type SelectProps, type SelectOption } from "./components/Select.tsx";
 export { DatePicker, type DatePickerProps } from "./components/DatePicker.tsx";
+export {
+  DateRangePicker,
+  type DateRangePickerProps,
+  type CalendarRange,
+} from "./components/DateRangePicker.tsx";
+export { Combobox, MultiSelect, type ComboboxProps, type MultiSelectProps } from "./components/Combobox.tsx";
+export {
+  TooltipProvider,
+  Tooltip,
+  Popover,
+  DropdownMenu,
+  ContextMenu,
+  ScrollArea,
+  type MenuItem,
+  type PopoverProps,
+  type ScrollAreaProps,
+} from "./components/Overlays.tsx";
+export { AlertDialog, Sheet, type AlertDialogProps } from "./components/AlertDialog.tsx";
+export { CommandPalette, type CommandAction } from "./components/CommandPalette.tsx";
+export {
+  Table,
+  VirtualTable,
+  type TableProps,
+  type ColumnDef,
+  type SortingState,
+  type RowSelectionState,
+} from "./components/Table.tsx";
 export { Checkbox, type CheckboxProps, type CheckedState } from "./components/Checkbox.tsx";
 export { Switch, type SwitchProps } from "./components/Switch.tsx";
 export { RadioGroup, Segmented, type RadioGroupProps, type ChoiceOption } from "./components/RadioGroup.tsx";
@@ -31,7 +58,3 @@ export { Skeleton, LoadingRegion } from "./components/Skeleton.tsx";
 
 export { notify, Toaster } from "./feedback/notify.tsx";
 export { confirmDialog, ConfirmHost } from "./feedback/confirm.tsx";
-
-// Следующие компоненты — T-F2-05 (см. docs/DESIGN.md §5): Combobox, DateRangePicker,
-// Tooltip, Popover, DropdownMenu, Table, VirtualTable, EmptyState, ErrorState,
-// CommandPalette, ScrollArea.

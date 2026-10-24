@@ -6,6 +6,7 @@ import process from "node:process";
 import { checkSelectionControls } from "./lib/check-selection-controls.mjs";
 import { checkSlidersTabs } from "./lib/check-sliders-tabs.mjs";
 import { checkFoundations } from "./lib/check-foundations.mjs";
+import { checkNavigation } from "./lib/check-navigation.mjs";
 const previewUrl = process.env.UI_PREVIEW_URL ?? "http://127.0.0.1:5174/";
 const workspace = createRequire(new URL("../apps/web/package.json", import.meta.url));
 const { chromium, expect } = workspace("@playwright/test");
@@ -31,6 +32,11 @@ try {
         await checkSelectionControls(page, expect);
         await checkSlidersTabs(page, expect);
         await checkFoundations(page, expect);
+        await checkNavigation(page, expect, async () => {
+          await page.waitForFunction(() => [...document.querySelectorAll('.zapas-popup,[role="dialog"],[role="alertdialog"]')].every((element) => getComputedStyle(element).opacity === "1"));
+          const audit = await new AxeBuilder({ page }).withTags(["wcag2a", "wcag2aa", "wcag21aa", "wcag22aa"]).analyze();
+          assert.deepEqual(audit.violations.map((v) => ({ id: v.id, nodes: v.nodes.map((n) => n.target) })), []);
+        });
         await page.evaluate(() =>
           Promise.all(document.getAnimations().map((animation) => animation.finished.catch(() => {}))),
         );
@@ -78,7 +84,7 @@ try {
         await page.keyboard.press("ArrowRight");
         await page.keyboard.press("Enter");
         await page.getByRole("dialog").waitFor({ state: "hidden" });
-        assert.match(await page.getByRole("status").innerText(), /2028-02-29/);
+        assert.match(await page.getByRole("status").filter({ hasText: "Значение даты:" }).innerText(), /2028-02-29/);
         await date.click();
         await page.waitForFunction(() => {
           const d = document.querySelector('[role="dialog"]');
@@ -114,7 +120,7 @@ try {
     await page.getByRole("button", { name: "Дата платежа", exact: true }).click();
     await page.keyboard.press("ArrowRight");
     await page.keyboard.press("Enter");
-    assert.match(await page.getByRole("status").innerText(), /2028-02-29/);
+    assert.match(await page.getByRole("status").filter({ hasText: "Значение даты:" }).innerText(), /2028-02-29/);
     results.push({ timezoneId, selected: "2028-02-29" });
     await context.close();
   }
