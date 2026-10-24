@@ -14,7 +14,7 @@ concurrency:
   cancel-in-progress: false
 
 env:
-  PREVIEW_MOCK_API: "1"
+  PREVIEW_MOCK_API: "0"
   LEFTHOOK: "0"
   HUSKY: "0"
   CI: "true"
@@ -56,4 +56,4 @@ jobs:
           PREVIEW_SSH_KEY: ${{ secrets.PREVIEW_SSH_KEY }}
       - name: Release summary
         run: |
-          echo "Published checked static preview $PREVIEW_COMMIT to https://45.146.165.12/ and /ui/. Backend is not connected." >> "$GITHUB_STEP_SUMMARY"
+          echo "Published checked static preview $PREVIEW_COMMIT to https://digital-hustle.ru/ and /ui/. /api/* is served by the real Gateway; demo mocks are disabled." >> "$GITHUB_STEP_SUMMARY"
