@@ -3,9 +3,17 @@
 import { existsSync, copyFileSync, symlinkSync, mkdirSync, cpSync } from "node:fs";
 import { join } from "node:path";
 import { run, has, root, isWin } from "./lib/run.mjs";
+import { satisfiesNode } from "./lib/node-version.mjs";
+
+const minimumNode = "24.18.0";
+if (!satisfiesNode(process.versions.node, minimumNode)) {
+  console.error(`✗ Node ${process.versions.node}: требуется ${minimumNode}+ (см. .nvmrc)`);
+  process.exit(1);
+}
+console.log(`✓ Node ${process.versions.node}`);
 
 for (const [cmd, label, required] of [
-  ["node", "Node 24", true],
+  ["node", "Node 24.18+", true],
   ["pnpm", "pnpm 10 (corepack enable)", true],
   ["git", "Git", true],
   ["gitleaks", "gitleaks (секреты)", false],
@@ -26,4 +34,4 @@ if (!existsSync(link)) {
     console.log("! symlink недоступен — скиллы скопированы в .claude/skills");
   }
 }
-console.log("Готово. pnpm dev:mock для UI без backend; pnpm check перед PR.");
+console.log("Готово. pnpm contracts:mock для схемных моков; pnpm check перед PR.");
