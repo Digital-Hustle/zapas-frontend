@@ -656,6 +656,7 @@ for (const width of [360, 768, 1440]) {
           reason: "Сверено с банком",
         });
         expect(await dialog.innerText()).toContain("−99 999 999 999 999 999,99");
+        await settledToasts(page);
         await audit(page);
         await dialog.getByRole("button", { name: "Готово", exact: true }).focus();
         await page.keyboard.press("Enter");
