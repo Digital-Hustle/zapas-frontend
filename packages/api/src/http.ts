@@ -1,10 +1,11 @@
-// Единственный HTTP-клиент фронтенда. Cookies HttpOnly (токены JS не видит), CSRF double-submit,
-// один общий refresh на все параллельные 401, ProblemDetail → ApiError → notify.
+// Legacy WEB transport for existing F1 screens. New v1 clients use browser.ts.
+// Kept separate so the browser Auth/Profile flow never reads legacy CSRF cookies.
 import { notify } from "@zapas/ui";
 
 export interface Problem {
   type?: string;
   title?: string;
+  instance?: string;
   status: number;
   code: string;
   detail: string;
@@ -16,7 +17,10 @@ export interface Problem {
 }
 
 export class ApiError extends Error {
-  constructor(readonly problem: Problem) {
+  constructor(
+    readonly problem: Problem,
+    readonly retryable = true,
+  ) {
     super(problem.detail);
     this.name = "ApiError";
   }
@@ -28,9 +32,7 @@ export class ApiError extends Error {
   }
 }
 
-const API_BASE =
-  (import.meta as { env?: Record<string, string | undefined> }).env
-    ?.VITE_API_BASE ?? "";
+const API_BASE = (import.meta as { env?: Record<string, string | undefined> }).env?.VITE_API_BASE ?? "";
 const CSRF_COOKIE = "zapas_csrf";
 const MUTATING = new Set(["POST", "PUT", "PATCH", "DELETE"]);
 
@@ -38,6 +40,9 @@ let onSessionLost: () => void = () => undefined;
 /** Приложение подписывается, чтобы увести на /login при окончательной потере сессии. */
 export const setSessionLostHandler = (fn: () => void) => {
   onSessionLost = fn;
+};
+export const emitSessionLost = () => {
+  onSessionLost();
 };
 
 const readCookie = (name: string) =>
@@ -63,8 +68,7 @@ async function refreshOnce(): Promise<RefreshOutcome> {
   }
 }
 
-const refresh = () =>
-  (inflight ??= refreshOnce().finally(() => (inflight = null)));
+const refresh = () => (inflight ??= refreshOnce().finally(() => (inflight = null)));
 
 function csrfHeaders(method: string): Record<string, string> {
   const token = MUTATING.has(method) ? readCookie(CSRF_COOKIE) : undefined;
@@ -81,10 +85,10 @@ async function toProblem(res: Response): Promise<Problem> {
   try {
     const body = (await res.json()) as Partial<Problem>;
     return {
+      ...body,
       status: res.status,
       code: body.code ?? "INTERNAL",
       detail: body.detail ?? "Что-то пошло не так",
-      ...body,
     };
   } catch {
     return {
@@ -102,19 +106,12 @@ export interface RequestOptions {
 }
 
 /** Мутатор orval: (url, init) → данные. */
-export async function http<T>(
-  url: string,
-  init: RequestInit & RequestOptions = {},
-): Promise<T> {
+export async function http<T>(url: string, init: RequestInit & RequestOptions = {}): Promise<T> {
   const method = (init.method ?? "GET").toUpperCase();
   const headers = new Headers(init.headers);
   headers.set("X-Client", "WEB");
   for (const [k, v] of Object.entries(csrfHeaders(method))) headers.set(k, v);
-  if (
-    init.body &&
-    !(init.body instanceof FormData) &&
-    !headers.has("Content-Type")
-  )
+  if (init.body && !(init.body instanceof FormData) && !headers.has("Content-Type"))
     headers.set("Content-Type", "application/json");
 
   let res: Response;
@@ -153,8 +150,7 @@ export async function http<T>(
     if (!init.silent) report(problem);
     throw new ApiError(problem);
   }
-  if (res.status === 204 || res.headers.get("content-length") === "0")
-    return undefined as T;
+  if (res.status === 204 || res.headers.get("content-length") === "0") return undefined as T;
   const type = res.headers.get("content-type") ?? "";
   if (type.includes("application/json")) return (await res.json()) as T;
   return (await res.blob()) as T;
@@ -173,3 +169,6 @@ function report(p: Problem) {
 }
 
 export default http;
+
+/** Generated hooks expose the actual transport error rather than a raw wire DTO. */
+export type ErrorType<_Problem> = ApiError;

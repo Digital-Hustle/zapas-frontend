@@ -1,0 +1,21 @@
+{
+  "id": "00000000-0000-4000-8000-000000000001",
+  "accountId": "00000000-0000-4000-8000-000000000001",
+  "direction": "IN",
+  "categoryCode": "example",
+  "counterpartyKey": null,
+  "status": "DETECTED",
+  "schedule": {
+    "frequency": "WEEKLY",
+    "weekday": null,
+    "dayOfMonth": null,
+    "businessDayRule": "NONE"
+  },
+  "amount": "125000.00",
+  "observations": 0,
+  "firstSeen": "2026-10-24",
+  "lastSeen": "2026-10-24",
+  "inputDataVersion": 0,
+  "detectorVersion": "example",
+  "version": 1
+}

@@ -1,0 +1,34 @@
+{
+  "items": [
+    {
+      "id": "00000000-0000-4000-8000-000000000001",
+      "name": "Кофейня «Пример»",
+      "legalForm": "OOO",
+      "inn": null,
+      "kpp": null,
+      "timezone": "Europe/Moscow",
+      "ownerUserId": "00000000-0000-4000-8000-000000000006",
+      "myRole": "OWNER",
+      "permissions": {
+        "canEditCompany": true,
+        "canManageMembers": true,
+        "canImport": true,
+        "canEditPayments": true,
+        "canManagePlans": true,
+        "canRunForecast": true,
+        "canRunBacktest": true
+      },
+      "archived": false,
+      "dataVersion": 7,
+      "version": 1,
+      "createdAt": "2026-10-24T09:00:00Z",
+      "updatedAt": "2026-10-24T09:00:00Z"
+    }
+  ],
+  "page": {
+    "page": 0,
+    "size": 50,
+    "total": 1,
+    "hasNext": false
+  }
+}

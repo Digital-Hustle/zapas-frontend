@@ -1,0 +1,130 @@
+{
+  "items": [
+    {
+      "date": "2026-10-11",
+      "inflow": "10000.00",
+      "outflow": "8000.00",
+      "balanceEod": "74000.00",
+      "status": "OBSERVED",
+      "paymentCount": 2,
+      "balanceMismatch": false
+    },
+    {
+      "date": "2026-10-12",
+      "inflow": "10000.00",
+      "outflow": "8000.00",
+      "balanceEod": "76000.00",
+      "status": "OBSERVED",
+      "paymentCount": 2,
+      "balanceMismatch": false
+    },
+    {
+      "date": "2026-10-13",
+      "inflow": "10000.00",
+      "outflow": "8000.00",
+      "balanceEod": "78000.00",
+      "status": "OBSERVED",
+      "paymentCount": 2,
+      "balanceMismatch": false
+    },
+    {
+      "date": "2026-10-14",
+      "inflow": "10000.00",
+      "outflow": "8000.00",
+      "balanceEod": "80000.00",
+      "status": "OBSERVED",
+      "paymentCount": 2,
+      "balanceMismatch": false
+    },
+    {
+      "date": "2026-10-15",
+      "inflow": "10000.00",
+      "outflow": "8000.00",
+      "balanceEod": "82000.00",
+      "status": "OBSERVED",
+      "paymentCount": 2,
+      "balanceMismatch": false
+    },
+    {
+      "date": "2026-10-16",
+      "inflow": "10000.00",
+      "outflow": "8000.00",
+      "balanceEod": "84000.00",
+      "status": "OBSERVED",
+      "paymentCount": 2,
+      "balanceMismatch": false
+    },
+    {
+      "date": "2026-10-17",
+      "inflow": "10000.00",
+      "outflow": "8000.00",
+      "balanceEod": "86000.00",
+      "status": "OBSERVED",
+      "paymentCount": 2,
+      "balanceMismatch": false
+    },
+    {
+      "date": "2026-10-18",
+      "inflow": "10000.00",
+      "outflow": "8000.00",
+      "balanceEod": "88000.00",
+      "status": "OBSERVED",
+      "paymentCount": 2,
+      "balanceMismatch": false
+    },
+    {
+      "date": "2026-10-19",
+      "inflow": "10000.00",
+      "outflow": "8000.00",
+      "balanceEod": "90000.00",
+      "status": "OBSERVED",
+      "paymentCount": 2,
+      "balanceMismatch": false
+    },
+    {
+      "date": "2026-10-20",
+      "inflow": "10000.00",
+      "outflow": "8000.00",
+      "balanceEod": "92000.00",
+      "status": "OBSERVED",
+      "paymentCount": 2,
+      "balanceMismatch": false
+    },
+    {
+      "date": "2026-10-21",
+      "inflow": "10000.00",
+      "outflow": "8000.00",
+      "balanceEod": "94000.00",
+      "status": "OBSERVED",
+      "paymentCount": 2,
+      "balanceMismatch": false
+    },
+    {
+      "date": "2026-10-22",
+      "inflow": "10000.00",
+      "outflow": "8000.00",
+      "balanceEod": "96000.00",
+      "status": "OBSERVED",
+      "paymentCount": 2,
+      "balanceMismatch": false
+    },
+    {
+      "date": "2026-10-23",
+      "inflow": "10000.00",
+      "outflow": "8000.00",
+      "balanceEod": "98000.00",
+      "status": "OBSERVED",
+      "paymentCount": 2,
+      "balanceMismatch": false
+    },
+    {
+      "date": "2026-10-24",
+      "inflow": "10000.00",
+      "outflow": "8000.00",
+      "balanceEod": "100000.00",
+      "status": "OBSERVED",
+      "paymentCount": 2,
+      "balanceMismatch": false
+    }
+  ]
+}

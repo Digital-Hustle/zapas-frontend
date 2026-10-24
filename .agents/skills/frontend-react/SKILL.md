@@ -26,9 +26,14 @@ description: React/TypeScript frontend «Запас» — web/admin, FSD, общ
 - График: только отображение серверных данных. number допускается для координат; деньги не пересчитывать в JS. Тултип имеет точные строки, интервалы/риск не только цветом.
 
 ## API и проверки
-- `pnpm --filter @zapas/api gen` — единственный способ обновить DTO/хуки; если export создаёт внутренние вызовы — исправить tags/filters.
+- DTO/типы из contracts/clients и current OpenAPI; codegen необязателен. Внутренние endpoints не экспортировать клиенту.
 - Cookies HttpOnly; CSRF bootstrap и Origin; refresh single-flight, только окончательный 401 завершает сессию, outage не logout. ADMIN не определяется доверенным X-Client.
 - `node tools/check.mjs frontend contracts tooling` перед PR; визуально 360/768/1440, светлая/тёмная, reduced motion, табы/скринридер.
 - Показать screen matrix до/после и известные ограничения. Новые библиотеки по registry сначала просматривать, не запускать install scripts с секретами.
 
 Справки: `references/component-catalog.md`, `custom-controls.md`, `motion.md`. Это адаптированные рекомендации, не скопированный брендинг Сбера.
+
+
+Текущий scope и пути: docs/USER_FLOWS.md, docs/CLIENT_HANDOFF.md, docs/orchestrator. Бизнес-данные только Orchestrator, CSV PreProcessor, Auth отдельно. probability=null/stale/failed не скрывать; нет обязательной админки, сценарного редактора или ML. Старые пути копии навыка адаптируются к продуктовой структуре.
+
+Объединённый Auth handoff ADR-110: docs/AUTH_PROFILE_API.md, docs/GATEWAY_AUTH.md и docs/CLIENT_HANDOFF.md. Основной browser contract auth-profile.yaml; Android/native и legacy — auth.yaml. Общие userId/sid, JWT только на Gateway, бизнес-компании/роли только Orchestrator. Namespaces API раздельные; при cookie-мутациях CSRF/Origin. Выбор transport без fallback и очистка browser cookies согласованы в handoff; реализация проверяется отдельно.

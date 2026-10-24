@@ -1,0 +1,13 @@
+{
+  "id": "00000000-0000-4000-8000-000000000004",
+  "companyId": "00000000-0000-4000-8000-000000000001",
+  "accountId": "00000000-0000-4000-8000-000000000002",
+  "type": "FORECAST",
+  "status": "QUEUED",
+  "progress": 0,
+  "resultId": null,
+  "error": null,
+  "createdAt": "2026-10-24T09:00:00Z",
+  "startedAt": null,
+  "finishedAt": null
+}
