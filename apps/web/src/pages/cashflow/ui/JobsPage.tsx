@@ -50,7 +50,17 @@ function Jobs({ scope }: { scope: BusinessScope }) {
                           : "Неизвестное задание"}{" "}
                     · {statusNames[item.status] ?? statusNames.UNKNOWN}
                   </p>
-                  <p className="text-muted-foreground text-sm">Создано: {item.createdAt}</p>
+                  <p className="text-muted-foreground text-sm">
+                    Создано:{" "}
+                    <time dateTime={item.createdAt}>
+                      {new Intl.DateTimeFormat("ru-RU", {
+                        dateStyle: "medium",
+                        timeStyle: "short",
+                        timeZone: "Europe/Moscow",
+                      }).format(new Date(item.createdAt))}{" "}
+                      МСК
+                    </time>
+                  </p>
                   <Button variant="secondary" size="sm" onClick={() => setSelected(item)}>
                     Открыть задание
                   </Button>
