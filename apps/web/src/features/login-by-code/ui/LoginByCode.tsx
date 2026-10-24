@@ -106,7 +106,7 @@ function EmailStep({
   const id = useId();
   const form = useForm<z.infer<typeof emailForm>>({
     resolver: zodResolver(emailForm),
-    defaultValues: { email: "" },
+    defaultValues: { email: import.meta.env.VITE_PREVIEW_MOCKS === "1" ? "demo@example.test" : "" },
   });
   const issue = error ? authIssue(error) : null;
   const message = form.formState.errors.email?.message ?? issue?.fields?.email;
@@ -229,7 +229,16 @@ function CodeStep({
           Введите код
         </h1>
         <p id={`${id}-hint`} className="text-muted-foreground mt-2">
-          Отправили шесть цифр на <span className="text-foreground font-medium break-all">{email}</span>.{" "}
+          {import.meta.env.VITE_PREVIEW_MOCKS === "1" ? (
+            <>
+              Демокод: <strong>000123</strong>. Письмо не отправляется.{" "}
+            </>
+          ) : (
+            <>
+              Отправили шесть цифр на <span className="text-foreground font-medium break-all">{email}</span>
+              .{" "}
+            </>
+          )}
           {unusable ? "Код больше не действует." : `Код действует ещё ${expiryLeft} с.`}
         </p>
       </div>

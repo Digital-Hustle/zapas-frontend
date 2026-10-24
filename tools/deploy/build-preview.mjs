@@ -20,8 +20,8 @@ export async function copyPublicBuild(from, to) {
     else await cp(source, target);
   }
 }
-export function command(program, args) {
-  const result = spawnSync(program, args, { encoding: "utf8", stdio: ["ignore", "pipe", "pipe"] });
+export function command(program, args, env = process.env) {
+  const result = spawnSync(program, args, { env, encoding: "utf8", stdio: ["ignore", "pipe", "pipe"] });
   if (result.status !== 0) throw new Error(`${program} failed: ${result.stderr || result.error?.message || "unknown error"}`);
   return result.stdout.trim();
 }
@@ -30,11 +30,12 @@ export async function buildPreview(sha, output = resolve("dist/preview")) {
   if (command("git", ["rev-parse", "HEAD"]) !== sha || command("git", ["status", "--porcelain"])) throw new Error("Build requires a clean checkout of the expected commit");
   const scratch = await mkdtemp(join(tmpdir(), "zapas-preview-build-"));
   try {
-    command("pnpm", ["--filter", "@zapas/web", "exec", "vite", "build", "--outDir", join(scratch, "web"), "--emptyOutDir"]);
+    const mockApi = process.env.PREVIEW_MOCK_API === "1";
+    command("pnpm", ["--filter", "@zapas/web", "exec", "vite", "build", "--outDir", join(scratch, "web"), "--emptyOutDir"], { ...process.env, VITE_PREVIEW_MOCKS: mockApi ? "1" : "0", VITE_API_BASE: "" });
     command("pnpm", ["--filter", "@zapas/web", "exec", "vite", "build", "../../packages/ui/examples", "--config", "vite.config.ts", "--base=/ui/", "--outDir", join(scratch, "ui"), "--emptyOutDir"]);
     await rm(output, { recursive: true, force: true });
     for (const surface of ["web", "ui"]) await copyPublicBuild(join(scratch, surface), join(output, surface));
-    await writeFile(join(output, "web/deployment.json"), JSON.stringify({ frontendCommit: sha, preview: true, backend: false, ui: "/ui/" }, null, 2) + "\n");
+    await writeFile(join(output, "web/deployment.json"), JSON.stringify({ frontendCommit: sha, preview: true, backend: false, mockApi, ui: "/ui/" }, null, 2) + "\n");
     return output;
   } finally { await rm(scratch, { recursive: true, force: true }); }
 }
