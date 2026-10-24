@@ -6,6 +6,7 @@ CSRF/credentials/refresh принадлежит F2 и подключается �
 Самостоятельный fetch или переход на legacy Auth не допускается.
 
 План этой части:
+
 - challengeId, абсолютные expiresAt/resendAvailableAt; шесть ASCII цифр строкой;
 - profile displayName/version, сохранение черновика при 409 и явное согласование;
 - sessions, current/all revoke, logout;
