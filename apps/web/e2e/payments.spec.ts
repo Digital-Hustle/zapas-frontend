@@ -616,7 +616,7 @@ for (const width of [360, 768, 1440])
       await page.goto(screen);
       await expect(page.getByRole("table")).toBeVisible();
       await page.keyboard.press("Tab");
-      await expect(page.getByRole("link", { name: "Запас — на главную", exact: true })).toBeFocused();
+      await expect(page.getByRole("button", { name: "Тема", exact: true })).toBeFocused();
       const first = await new AxeBuilder({ page }).analyze();
       await page.screenshot({
         path: `evidence/T-CLIENT-01-operations/list-${width}-${theme}.png`,
