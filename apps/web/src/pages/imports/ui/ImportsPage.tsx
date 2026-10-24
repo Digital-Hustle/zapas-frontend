@@ -11,6 +11,8 @@ import { accessDenied } from "@/shared/api/problem.ts";
 import { Logo } from "@/shared/ui";
 import { Loading, Pagination, QueryIssue } from "@/shared/ui/BusinessData.tsx";
 import { ImportReport, ImportSummary } from "./ImportReport.tsx";
+import { WorkspaceNavigation } from "@/widgets/business-workspace";
+import { companyPath } from "@/shared/lib/workspace-path.ts";
 
 function ImportWorkspace({
   company,
@@ -166,7 +168,7 @@ export function ImportsPage() {
       </Link>
     </div>
   );
-  const back = companyId && accountId ? `/app?company=${companyId}&account=${accountId}` : "/app";
+  const back = companyId && accountId ? companyPath(companyId, accountId) : "/app";
   return (
     <div className="bg-background min-h-svh">
       <header className="border-border border-b">
@@ -214,13 +216,16 @@ export function ImportsPage() {
               account.data &&
               !(company.isError && accessDenied(company.error)) &&
               !(account.isError && accessDenied(account.error)) && (
-                <ImportWorkspace
-                  key={`${companyId}/${accountId}`}
-                  company={company.data}
-                  account={account.data}
-                  stale={company.isError || account.isError}
-                  recovery={recoveryAction}
-                />
+                <div className="space-y-6">
+                  <WorkspaceNavigation companyId={company.data.id} accountId={account.data.id} />
+                  <ImportWorkspace
+                    key={`${companyId}/${accountId}`}
+                    company={company.data}
+                    account={account.data}
+                    stale={company.isError || account.isError}
+                    recovery={recoveryAction}
+                  />
+                </div>
               )}
           </>
         )}

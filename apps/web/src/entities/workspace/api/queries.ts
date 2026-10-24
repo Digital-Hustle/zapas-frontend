@@ -19,6 +19,7 @@ export function useCompanies(page: number, privateQueries: boolean) {
 export function useCompany(companyId: string | null, privateQueries: boolean) {
   return useQuery({
     queryKey: workspaceKeys.company(companyId ?? ""),
+    refetchOnMount: "always",
     queryFn: ({ signal }) => workspaceApi.company(companyId ?? "", signal),
     enabled: privateQueries && companyId !== null,
     retry: false,

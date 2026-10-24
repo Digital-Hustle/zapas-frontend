@@ -6,7 +6,7 @@ import { useQueryClient } from "@tanstack/react-query";
 import { resetPrivateSession, usePrivateQueries } from "@/entities/auth-profile";
 import { pageSwap } from "@zapas/tokens/motion";
 import { PreviewNotice } from "../preview/PreviewNotice.tsx";
-import { ThemeControl } from "../ui/ThemeControl.tsx";
+import { PageNavigation } from "../navigation/PageNavigation.tsx";
 
 /** Уходящая страница держит последний кадр, пока проигрывается выход (иначе outlet сразу покажет новую). */
 function Frozen({ children }: { children: React.ReactNode }) {
@@ -51,11 +51,7 @@ export function RootLayout() {
   return (
     <>
       {import.meta.env.VITE_PREVIEW_MOCKS === "1" && <PreviewNotice />}
-      <div className="border-border bg-background border-b">
-        <div className="max-w-content mx-auto flex justify-end px-6 py-2">
-          <ThemeControl />
-        </div>
-      </div>
+      <PageNavigation />
       <AnimatePresence
         mode="wait"
         custom={dir}
