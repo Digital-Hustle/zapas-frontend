@@ -36,6 +36,8 @@
   --color-primary-hover: var(--primary-hover);
   --color-primary-soft: var(--primary-soft);
   --color-primary-soft-foreground: var(--primary-soft-foreground);
+  --color-primary-soft-hover: var(--primary-soft-hover);
+  --color-primary-soft-hover-foreground: var(--primary-soft-hover-foreground);
   --color-brand: var(--brand);
   --color-brand-foreground: var(--brand-foreground);
   --color-accent: var(--accent);
@@ -50,8 +52,12 @@
   --color-warning-soft-foreground: var(--warning-soft-foreground);
   --color-danger: var(--danger);
   --color-danger-foreground: var(--danger-foreground);
+  --color-danger-hover: var(--danger-hover);
+  --color-danger-hover-foreground: var(--danger-hover-foreground);
   --color-danger-soft: var(--danger-soft);
   --color-danger-soft-foreground: var(--danger-soft-foreground);
+  --color-danger-soft-hover: var(--danger-soft-hover);
+  --color-danger-soft-hover-foreground: var(--danger-soft-hover-foreground);
   --color-info: var(--info);
   --color-info-foreground: var(--info-foreground);
   --color-info-soft: var(--info-soft);
@@ -154,6 +160,8 @@
   --primary-hover: #0b6e3c;
   --primary-soft: #eaf8f0;
   --primary-soft-foreground: #0a5531;
+  --primary-soft-hover: #cdefdb;
+  --primary-soft-hover-foreground: #0a5531;
   --brand: #0b6e3c;
   --brand-foreground: #ffffff;
   --accent: #b5e655;
@@ -168,8 +176,12 @@
   --warning-soft-foreground: #8a3f07;
   --danger: #d92d20;
   --danger-foreground: #ffffff;
+  --danger-hover: #b42318;
+  --danger-hover-foreground: #ffffff;
   --danger-soft: #fef0ee;
   --danger-soft-foreground: #b42318;
+  --danger-soft-hover: #fddcd7;
+  --danger-soft-hover-foreground: #b42318;
   --info: #2563eb;
   --info-foreground: #ffffff;
   --info-soft: #eef4ff;
@@ -241,6 +253,8 @@
   --primary-hover: #69cc95;
   --primary-soft: rgb(60 197 126 / 0.14);
   --primary-soft-foreground: #9edfba;
+  --primary-soft-hover: rgb(60 197 126 / 0.22);
+  --primary-soft-hover-foreground: #9edfba;
   --brand: #69cc95;
   --brand-foreground: #04231a;
   --accent: #cbef85;
@@ -255,8 +269,12 @@
   --warning-soft-foreground: #fcc860;
   --danger: #f0705e;
   --danger-foreground: #55160c;
+  --danger-hover: #f59a8c;
+  --danger-hover-foreground: #55160c;
   --danger-soft: rgb(240 112 94 / 0.14);
   --danger-soft-foreground: #f59a8c;
+  --danger-soft-hover: rgb(240 112 94 / 0.22);
+  --danger-soft-hover-foreground: #f59a8c;
   --info: #6690f5;
   --info-foreground: #11265c;
   --info-soft: rgb(102 144 245 / 0.14);

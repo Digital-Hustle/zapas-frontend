@@ -13,10 +13,10 @@ export const buttonVariants = cva(
       variant: {
         primary: "bg-primary text-primary-foreground hover:bg-primary-hover shadow-xs",
         secondary: "bg-card text-foreground border-border-strong hover:bg-muted border shadow-xs",
-        soft: "bg-primary-soft text-primary-soft-foreground hover:bg-primary-soft/80",
+        soft: "bg-primary-soft text-primary-soft-foreground hover:bg-primary-soft-hover",
         ghost: "text-foreground hover:bg-muted",
-        danger: "bg-danger text-danger-foreground hover:bg-danger/90 shadow-xs",
-        "danger-soft": "bg-danger-soft text-danger-soft-foreground hover:bg-danger-soft/80",
+        danger: "bg-danger text-danger-foreground hover:bg-danger-hover shadow-xs",
+        "danger-soft": "bg-danger-soft text-danger-soft-foreground hover:bg-danger-soft-hover",
         link: "text-primary h-auto px-0 underline-offset-4 hover:underline",
       },
       size: {

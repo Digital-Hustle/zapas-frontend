@@ -24,6 +24,8 @@
 | `primary-hover` | `#0B6E3C` | `#69CC95` |
 | `primary-soft` | `#EAF8F0` | `rgb(60 197 126 / 0.14)` |
 | `primary-soft-foreground` | `#0A5531` | `#9EDFBA` |
+| `primary-soft-hover` | `#CDEFDB` | `rgb(60 197 126 / 0.22)` |
+| `primary-soft-hover-foreground` | `#0A5531` | `#9EDFBA` |
 | `brand` | `#0B6E3C` | `#69CC95` |
 | `brand-foreground` | `#FFFFFF` | `#04231A` |
 | `accent` | `#B5E655` | `#CBEF85` |
@@ -38,8 +40,12 @@
 | `warning-soft-foreground` | `#8A3F07` | `#FCC860` |
 | `danger` | `#D92D20` | `#F0705E` |
 | `danger-foreground` | `#FFFFFF` | `#55160C` |
+| `danger-hover` | `#B42318` | `#F59A8C` |
+| `danger-hover-foreground` | `#FFFFFF` | `#55160C` |
 | `danger-soft` | `#FEF0EE` | `rgb(240 112 94 / 0.14)` |
 | `danger-soft-foreground` | `#B42318` | `#F59A8C` |
+| `danger-soft-hover` | `#FDDCD7` | `rgb(240 112 94 / 0.22)` |
+| `danger-soft-hover-foreground` | `#B42318` | `#F59A8C` |
 | `info` | `#2563EB` | `#6690F5` |
 | `info-foreground` | `#FFFFFF` | `#11265C` |
 | `info-soft` | `#EEF4FF` | `rgb(102 144 245 / 0.14)` |
@@ -66,6 +72,7 @@
 | light | `subtle` / `subtle-foreground` | 7.46 | 4.5 | ✓ |
 | light | `primary` / `primary-foreground` | 5.01 | 4.5 | ✓ |
 | light | `primary-soft` / `primary-soft-foreground` | 8.14 | 4.5 | ✓ |
+| light | `primary-soft-hover` / `primary-soft-hover-foreground` | 7.20 | 4.5 | ✓ |
 | light | `brand` / `brand-foreground` | 6.34 | 4.5 | ✓ |
 | light | `accent` / `accent-foreground` | 11.44 | 3 | ✓ |
 | light | `success` / `success-foreground` | 5.01 | 4.5 | ✓ |
@@ -73,7 +80,9 @@
 | light | `warning` / `warning-foreground` | 7.10 | 3 | ✓ |
 | light | `warning-soft` / `warning-soft-foreground` | 7.05 | 4.5 | ✓ |
 | light | `danger` / `danger-foreground` | 4.83 | 4.5 | ✓ |
+| light | `danger-hover` / `danger-hover-foreground` | 6.57 | 4.5 | ✓ |
 | light | `danger-soft` / `danger-soft-foreground` | 5.92 | 4.5 | ✓ |
+| light | `danger-soft-hover` / `danger-soft-hover-foreground` | 5.13 | 4.5 | ✓ |
 | light | `info` / `info-foreground` | 5.17 | 4.5 | ✓ |
 | light | `info-soft` / `info-soft-foreground` | 6.41 | 4.5 | ✓ |
 | light | `inverse` / `inverse-foreground` | 16.87 | 4.5 | ✓ |
@@ -83,6 +92,7 @@
 | dark | `subtle` / `subtle-foreground` | 8.38 | 4.5 | ✓ |
 | dark | `primary` / `primary-foreground` | 7.52 | 4.5 | ✓ |
 | dark | `primary-soft` / `primary-soft-foreground` | 10.14 | 4.5 | ✓ |
+| dark | `primary-soft-hover` / `primary-soft-hover-foreground` | 8.53 | 4.5 | ✓ |
 | dark | `brand` / `brand-foreground` | 8.47 | 4.5 | ✓ |
 | dark | `accent` / `accent-foreground` | 12.87 | 3 | ✓ |
 | dark | `success` / `success-foreground` | 7.52 | 4.5 | ✓ |
@@ -90,7 +100,9 @@
 | dark | `warning` / `warning-foreground` | 8.37 | 3 | ✓ |
 | dark | `warning-soft` / `warning-soft-foreground` | 9.74 | 4.5 | ✓ |
 | dark | `danger` / `danger-foreground` | 4.77 | 4.5 | ✓ |
+| dark | `danger-hover` / `danger-hover-foreground` | 6.56 | 4.5 | ✓ |
 | dark | `danger-soft` / `danger-soft-foreground` | 7.67 | 4.5 | ✓ |
+| dark | `danger-soft-hover` / `danger-soft-hover-foreground` | 6.69 | 4.5 | ✓ |
 | dark | `info` / `info-foreground` | 4.72 | 4.5 | ✓ |
 | dark | `info-soft` / `info-soft-foreground` | 7.84 | 4.5 | ✓ |
 | dark | `inverse` / `inverse-foreground` | 17.08 | 4.5 | ✓ |

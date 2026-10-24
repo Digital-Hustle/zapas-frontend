@@ -62,12 +62,15 @@ PREVIEW_COMMIT=<полный-sha> PREVIEW_KEY_FILE=<локальный-ключ>
 
 ## Следующий backend handoff
 
-Backend main `32da2ed` содержит прежний scaffold без исполняемых Java-сервисов;
-открытых backend PR на момент проверки нет. На VPS Docker и backend отсутствуют.
-Нужны проверенные сборки/образы Gateway, Auth/Profile, PreProcessor, Orchestrator,
-Forecast по архитектуре v1; health endpoints/порты, миграции двух БД, signing keys
-и конфигурация Gateway/Origin/cookies/CSRF. Только после этого F2 может собрать и
-проверить runtime, правила ingress, backup/restore и полный rollback приложений.
+Фактический backend по уточнению владельца — [hack-2026-back](https://github.com/Digital-Hustle/hack-2026-back).
+Auth/Profile PR #1 имеет исходники, Compose и успешный verify; PreProcessor и
+Orchestrator пока в draft-стеке. Gateway feature/gateway ещё несовместим с JWT/cookies/
+CSRF согласованного ADR-110, а Auth/Profile не очищает legacy cookies.
+Состояние и точные пути — [хаб BACKEND_RUNTIME_STATUS](https://github.com/Digital-Hustle/zapas/blob/main/docs/BACKEND_RUNTIME_STATUS.md).
+
+На VPS Docker/backend пока отсутствуют. После совместимой сборки Gateway/Auth
+и окончательных health/портов/миграций можно подготовить runtime, две БД,
+ingress, backup/restore и rollback. Публикация статического main этого не заменяет.
 
 SMTP TLS/login уже проверены предыдущим этапом; пароль в root-only серверном
 файле. Отправка/доставка OTP и cookie-flow требуют реализации Auth/Gateway и
