@@ -28,6 +28,10 @@ describe("format", () => {
     expect(parseMoneyInput("300000")).toBe("300000.00");
     expect(parseMoneyInput("12,345")).toBeNull();
     expect(parseMoneyInput("abc")).toBeNull();
+    expect(parseMoneyInput("99 999 999 999 999 999,99")).toBe("99999999999999999.99");
+    expect(parseMoneyInput("100000000000000000.00")).toBeNull();
+    expect(parseMoneyInput("-100.00")).toBeNull();
+    expect(parseMoneyInput("−100,50", { allowNegative: true })).toBe("-100.50");
   });
 
   it("склоняет", () => {

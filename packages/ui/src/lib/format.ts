@@ -77,9 +77,17 @@ export function plural(n: number, forms: readonly [string, string, string]) {
 }
 
 /** Нормализует ввод пользователя «125 000,5» → "125000.50" или null */
-export function parseMoneyInput(input: string): MoneyString | null {
-  const cleaned = input.replace(/[\s\u00a0₽]/g, "").replace(",", ".");
-  if (!/^\d{1,15}(\.\d{0,2})?$/.test(cleaned)) return null;
-  const [int, frac = ""] = cleaned.split(".");
-  return `${(int ?? "0").replace(/^0+(?=\d)/, "")}.${frac.padEnd(2, "0")}`;
+export function parseMoneyInput(
+  input: string,
+  options: { allowNegative?: boolean } = {},
+): MoneyString | null {
+  const cleaned = input
+    .replace(/[\s\u00a0₽]/g, "")
+    .replace(",", ".")
+    .replace(/^−/, "-");
+  if (!/^-?\d{1,17}(\.\d{0,2})?$/.test(cleaned) || (cleaned.startsWith("-") && !options.allowNegative))
+    return null;
+  const [int, frac = ""] = cleaned.replace(/^-/, "").split(".");
+  const result = `${(int ?? "0").replace(/^0+(?=\d)/, "")}.${frac.padEnd(2, "0")}`;
+  return cleaned.startsWith("-") && !/^0\.00$/.test(result) ? `-${result}` : result;
 }

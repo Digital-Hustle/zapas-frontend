@@ -10,10 +10,12 @@ import {
   Stepper,
   Textarea,
   Field,
+  MoneyInput,
 } from "../src/index.ts";
 
 export function FoundationExample() {
   const [file, setFile] = useState<File | null>(null);
+  const [amount, setAmount] = useState<string | null>("99999999999999999.99");
   return (
     <section
       aria-label="Импорт и состояния"
@@ -47,6 +49,9 @@ export function FoundationExample() {
       <p>
         Точная сумма: <Amount value="99999999999999999.99" />
       </p>
+      <Field htmlFor="precise-amount" label="Точная сумма платежа">
+        <MoneyInput id="precise-amount" value={amount} onChange={setAmount} />
+      </Field>
       <EmptyState
         title="Нет подходящих операций"
         description="Измените фильтры или загрузите другую выписку."

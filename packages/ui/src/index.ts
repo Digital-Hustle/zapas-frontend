@@ -19,6 +19,7 @@ export {
 export { Stepper, Progress, type Step } from "./components/Progress.tsx";
 export { MoneyInput, type MoneyInputProps } from "./components/MoneyInput.tsx";
 export { OtpInput, type OtpInputProps } from "./components/OtpInput.tsx";
+export { ResendCode, type ResendCodeProps } from "./components/ResendCode.tsx";
 export { Select, type SelectProps, type SelectOption } from "./components/Select.tsx";
 export { DatePicker, type DatePickerProps } from "./components/DatePicker.tsx";
 export {
