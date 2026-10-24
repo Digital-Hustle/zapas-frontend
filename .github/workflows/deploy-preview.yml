@@ -1,0 +1,58 @@
+name: deploy-preview
+
+on:
+  workflow_run:
+    workflows: [ci]
+    types: [completed]
+
+permissions:
+  contents: read
+  checks: read
+
+concurrency:
+  group: public-preview
+  cancel-in-progress: false
+
+env:
+  LEFTHOOK: "0"
+  HUSKY: "0"
+  CI: "true"
+
+jobs:
+  publish:
+    # Secrets are never made available to a PR/fork/alternate branch or failed CI.
+    if: >-
+      github.event.workflow_run.event == 'push' &&
+      github.event.workflow_run.head_branch == 'main' &&
+      github.event.workflow_run.head_repository.full_name == github.repository &&
+      github.event.workflow_run.conclusion == 'success'
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    env:
+      PREVIEW_COMMIT: ${{ github.event.workflow_run.head_sha }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ github.event.workflow_run.head_sha }}
+          persist-credentials: false
+      - uses: pnpm/action-setup@b906affcce14559ad1aafd4ab0e942779e9f58b1 # v4
+        with:
+          version: 10.34.7
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
+        with:
+          node-version: "24.21.0"
+      - name: Require current main and all security checks
+        run: node tools/deploy/gate.mjs
+        env:
+          GH_TOKEN: ${{ github.token }}
+      - run: pnpm install --frozen-lockfile
+      - name: Build static web and UI release without sources or maps
+        run: node tools/deploy/build-preview.mjs
+      - name: Publish, verify TLS and restore previous release on failure
+        run: node tools/deploy/publish-preview.mjs
+        env:
+          GH_TOKEN: ${{ github.token }}
+          PREVIEW_SSH_KEY: ${{ secrets.PREVIEW_SSH_KEY }}
+      - name: Release summary
+        run: |
+          echo "Published checked static preview $PREVIEW_COMMIT to https://45.146.165.12/ and /ui/. Backend is not connected." >> "$GITHUB_STEP_SUMMARY"
