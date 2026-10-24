@@ -4,6 +4,7 @@ import { RouterProvider } from "react-router";
 import { queryClient } from "@zapas/api";
 import { ConfirmHost, Toaster } from "@zapas/ui";
 import { tween } from "@zapas/tokens/motion";
+import { AuthProfileProvider, browserAuthPort } from "@/entities/auth-profile";
 import { router } from "./router.tsx";
 import { ThemeProvider } from "./providers/ThemeProvider.tsx";
 
@@ -12,7 +13,9 @@ export function App() {
     <MotionConfig reducedMotion="user" transition={tween.base}>
       <ThemeProvider>
         <QueryClientProvider client={queryClient}>
-          <RouterProvider router={router} />
+          <AuthProfileProvider port={browserAuthPort}>
+            <RouterProvider router={router} />
+          </AuthProfileProvider>
           <Toaster />
           <ConfirmHost />
         </QueryClientProvider>

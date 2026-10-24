@@ -1,95 +1,94 @@
-import { useState } from "react";
-import { AnimatePresence, motion } from "motion/react";
-import { useForm } from "react-hook-form";
+import { useEffect, useId, useRef, useState } from "react";
+import { motion } from "motion/react";
+import { useIsMutating } from "@tanstack/react-query";
+import { Controller, useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
-import { ApiError } from "@zapas/api";
-import { Button, Field, Input, OtpInput, plural } from "@zapas/ui";
+import { Button, Field, Input, OtpInput, notify } from "@zapas/ui";
 import { ArrowLeft, Mail } from "@zapas/ui/icons";
 import { fadeUp } from "@zapas/tokens/motion";
-import {
-  useRequestCode,
-  useVerifyCode,
-  type CodeRs,
-} from "../api/mutations.ts";
+import { authIssue, emailSchema, otpSchema, useAuthPort, type LoginChallenge } from "@/entities/auth-profile";
+import { useRequestCode, useVerifyCode } from "../api/mutations.ts";
 import { useCountdown } from "../model/useCountdown.ts";
 
-const emailSchema = z.object({
-  email: z.email("Проверьте адрес почты").max(254),
-});
+const emailForm = z.object({ email: emailSchema });
+const codeForm = z.object({ code: otpSchema });
 
-type Step = { kind: "email" } | { kind: "code"; email: string; sent: CodeRs };
-
-function describeError(e: unknown): string {
-  if (!(e instanceof ApiError))
-    return "Не удалось проверить код. Повторите попытку.";
-  const { code, attemptsLeft, detail } = e.problem;
-  if (code === "AUTH_CODE_INVALID" && typeof attemptsLeft === "number") {
-    return attemptsLeft > 0
-      ? `Неверный код. Осталось ${attemptsLeft} ${plural(attemptsLeft, ["попытка", "попытки", "попыток"])}`
-      : "Код больше не действует — запросите новый.";
-  }
-  return detail;
-}
-
-export function LoginByCode({
-  onSuccess,
-}: {
-  onSuccess: (isNewUser: boolean) => void;
-}) {
-  const [step, setStep] = useState<Step>({ kind: "email" });
+export function LoginByCode({ onSuccess }: { onSuccess: () => void }) {
+  const port = useAuthPort();
+  const [step, setStep] = useState<{ email: string; challenge: LoginChallenge } | null>(null);
   const [lockedUntil, setLockedUntil] = useState<number | null>(null);
   const request = useRequestCode();
+  const busy = useIsMutating({ mutationKey: ["auth-profile"] }) > 0;
   const lockLeft = useCountdown(lockedUntil);
-
+  const mounted = useRef(false);
+  const requesting = useRef(false);
+  useEffect(() => {
+    requesting.current = false;
+  }, [step?.challenge.id]);
+  useEffect(() => {
+    mounted.current = true;
+    return () => {
+      mounted.current = false;
+    };
+  }, []);
   const send = async (email: string) => {
+    if (requesting.current || busy) return;
+    requesting.current = true;
     try {
-      const sent = await request.mutateAsync(email);
-      setStep({ kind: "code", email, sent });
-      setLockedUntil(null);
-      return sent;
-    } catch (e) {
-      if (e instanceof ApiError && e.problem.retryAfterSec)
-        setLockedUntil(Date.now() + e.problem.retryAfterSec * 1000);
-      throw e;
+      const challenge = await request.mutateAsync(email);
+      if (mounted.current) {
+        setStep({ email, challenge });
+        setLockedUntil(null);
+      }
+    } catch (error) {
+      requesting.current = false;
+      const issue = authIssue(error);
+      if (mounted.current) {
+        if (issue.retryAt) setLockedUntil(issue.retryAt);
+        if (!issue.fields?.email) notify.error(issue.message);
+      }
     }
   };
 
+  if (!port)
+    return (
+      <div className="flex flex-col gap-4">
+        <h1 className="text-2xl font-semibold">Вход в Запас</h1>
+        <p role="alert" className="text-muted-foreground">
+          Сервис входа пока недоступен.
+        </p>
+        <p className="text-muted-foreground text-sm">Попробуйте зайти позже. Код не запрашивался.</p>
+      </div>
+    );
+
   return (
-    <AnimatePresence mode="wait" initial={false}>
-      {step.kind === "email" ? (
-        <motion.div
-          key="email"
-          variants={fadeUp}
-          initial="hidden"
-          animate="show"
-          exit="exit"
-        >
-          <EmailStep
-            onSubmit={send}
-            pending={request.isPending}
-            lockLeft={lockLeft}
-            error={request.error}
-          />
-        </motion.div>
+    <motion.div key={step?.challenge.id ?? "email"} variants={fadeUp} initial="hidden" animate="show">
+      {step ? (
+        <CodeStep
+          email={step.email}
+          challenge={step.challenge}
+          requestError={request.error}
+          resendPending={request.isPending}
+          requestLock={lockLeft}
+          onBack={() => {
+            setStep(null);
+            request.reset();
+          }}
+          onResend={() => send(step.email)}
+          onSuccess={() => {
+            if (mounted.current) onSuccess();
+          }}
+        />
       ) : (
-        <motion.div
-          key="code"
-          variants={fadeUp}
-          initial="hidden"
-          animate="show"
-          exit="exit"
-        >
-          <CodeStep
-            email={step.email}
-            sent={step.sent}
-            onBack={() => setStep({ kind: "email" })}
-            onResend={() => send(step.email)}
-            onSuccess={onSuccess}
-          />
-        </motion.div>
+        <EmailStep
+          onSubmit={send}
+          pending={request.isPending || busy}
+          lockLeft={lockLeft}
+          error={request.error}
+        />
       )}
-    </AnimatePresence>
+    </motion.div>
   );
 }
 
@@ -99,170 +98,195 @@ function EmailStep({
   lockLeft,
   error,
 }: {
-  onSubmit: (email: string) => Promise<unknown>;
+  onSubmit: (email: string) => Promise<void>;
   pending: boolean;
   lockLeft: number;
   error: Error | null;
 }) {
-  const form = useForm<z.infer<typeof emailSchema>>({
-    resolver: zodResolver(emailSchema),
+  const id = useId();
+  const form = useForm<z.infer<typeof emailForm>>({
+    resolver: zodResolver(emailForm),
     defaultValues: { email: "" },
   });
-  const apiError =
-    error instanceof ApiError && lockLeft === 0 ? error.problem.detail : null;
+  const issue = error ? authIssue(error) : null;
+  const message = form.formState.errors.email?.message ?? issue?.fields?.email;
   return (
     <form
       className="flex flex-col gap-5"
       noValidate
-      onSubmit={form.handleSubmit(({ email }) =>
-        onSubmit(email).catch(() => undefined),
-      )}
+      onSubmit={form.handleSubmit(({ email }) => onSubmit(email))}
     >
       <div>
         <h1 className="text-2xl font-semibold">Вход в Запас</h1>
-        <p className="mt-2 text-base text-muted-foreground">
-          Пришлём код на почту. Пароль не нужен.
-        </p>
+        <p className="text-muted-foreground mt-2">Пришлём код на почту. Пароль не нужен.</p>
       </div>
-      <Field
-        label="Рабочая почта"
-        htmlFor="email"
-        error={form.formState.errors.email?.message ?? apiError ?? undefined}
-      >
+      <Field label="Рабочая почта" htmlFor={id} error={message}>
         <Input
-          id="email"
+          id={id}
           type="email"
           inputMode="email"
           autoComplete="email"
           autoFocus
           placeholder="you@company.ru"
           prefix={<Mail />}
-          invalid={Boolean(form.formState.errors.email)}
-          aria-describedby={
-            form.formState.errors.email ? "email-error" : undefined
-          }
+          invalid={Boolean(message)}
+          aria-describedby={message ? `${id}-error` : undefined}
+          disabled={pending}
           {...form.register("email")}
         />
       </Field>
+      {issue && !issue.fields?.email && (
+        <p role="alert" className="text-danger text-sm">
+          {issue.message}
+        </p>
+      )}
       <Button
         type="submit"
         size="lg"
         block
         loading={pending}
-        disabled={lockLeft > 0}
+        disabled={lockLeft > 0 || form.formState.isSubmitting}
       >
-        {lockLeft > 0
-          ? `Повторить через ${lockLeft} ${plural(lockLeft, ["секунду", "секунды", "секунд"])}`
-          : "Получить код"}
+        {lockLeft > 0 ? `Повторить через ${lockLeft} с` : "Получить код"}
       </Button>
-      <p className="text-sm text-muted-foreground">
-        Продолжая, вы соглашаетесь с условиями сервиса и обработкой данных.
-      </p>
     </form>
   );
 }
 
 function CodeStep({
   email,
-  sent,
+  challenge,
+  requestError,
+  resendPending,
+  requestLock,
   onBack,
   onResend,
   onSuccess,
 }: {
   email: string;
-  sent: CodeRs;
+  challenge: LoginChallenge;
+  requestError: Error | null;
+  resendPending: boolean;
+  requestLock: number;
   onBack: () => void;
-  onResend: () => Promise<CodeRs>;
-  onSuccess: (isNew: boolean) => void;
+  onResend: () => Promise<void>;
+  onSuccess: () => void;
 }) {
-  const [code, setCode] = useState(sent.demoCode ?? "");
+  const id = useId();
+  const form = useForm<z.infer<typeof codeForm>>({
+    resolver: zodResolver(codeForm),
+    defaultValues: { code: "" },
+  });
   const [errorKey, setErrorKey] = useState(0);
-  const [message, setMessage] = useState<string | null>(null);
-  const [resendAt, setResendAt] = useState(
-    () => Date.now() + sent.resendAfterSec * 1000,
-  );
+  const [serverExpired, setServerExpired] = useState(false);
+  const [exhausted, setExhausted] = useState(false);
+  const [confirmed, setConfirmed] = useState(false);
+  const verifying = useRef(false);
   const [lockedUntil, setLockedUntil] = useState<number | null>(null);
-  const resendLeft = useCountdown(resendAt);
-  const lockLeft = useCountdown(lockedUntil);
   const verify = useVerifyCode();
-
-  const submit = async (value: string) => {
-    setMessage(null);
+  const busy = useIsMutating({ mutationKey: ["auth-profile"] }) > 0;
+  const expiryLeft = useCountdown(challenge.expiresAt);
+  const resendLeft = useCountdown(challenge.resendAt);
+  const lockLeft = useCountdown(lockedUntil);
+  const expired = serverExpired || expiryLeft === 0;
+  const unusable = expired || exhausted;
+  const locked = lockLeft > 0 || requestLock > 0;
+  const pending = verify.isPending || resendPending || form.formState.isSubmitting || confirmed || busy;
+  const issue = requestError ? authIssue(requestError) : null;
+  const submit = async ({ code }: { code: string }) => {
+    if (verifying.current || resendPending || unusable || locked || busy) return;
+    verifying.current = true;
     try {
-      const res = await verify.mutateAsync({ email, code: value });
-      onSuccess(res.isNewUser);
-    } catch (e) {
-      setCode("");
-      setErrorKey((k) => k + 1);
-      setMessage(describeError(e));
-      if (
-        e instanceof ApiError &&
-        e.problem.code === "AUTH_LOCKED" &&
-        e.problem.retryAfterSec
-      ) {
-        setLockedUntil(Date.now() + e.problem.retryAfterSec * 1000);
-      }
+      await verify.mutateAsync({ challengeId: challenge.id, code });
+      setConfirmed(true);
+      onSuccess();
+    } catch (error) {
+      verifying.current = false;
+      const failure = authIssue(error);
+      form.setValue("code", "");
+      setErrorKey((value) => value + 1);
+      form.setError("code", { message: failure.message });
+      if (failure.kind === "code-expired") setServerExpired(true);
+      if (failure.kind === "code-attempts-exceeded") setExhausted(true);
+      if (failure.retryAt) setLockedUntil(failure.retryAt);
+      if (failure.kind !== "code-invalid" && failure.kind !== "code-expired") notify.error(failure.message);
     }
   };
-
-  const resend = async () => {
-    try {
-      const next = await onResend();
-      setResendAt(Date.now() + next.resendAfterSec * 1000);
-      setMessage(null);
-    } catch (e) {
-      if (e instanceof ApiError && e.problem.retryAfterSec)
-        setResendAt(Date.now() + e.problem.retryAfterSec * 1000);
-    }
-  };
-
-  const locked = lockLeft > 0;
   return (
-    <div className="flex flex-col gap-5">
-      <button
-        type="button"
-        onClick={onBack}
-        className="-ml-2 inline-flex w-fit items-center gap-1 rounded-sm px-2 py-1 text-sm text-muted-foreground transition-colors duration-fast hover:text-foreground"
-      >
-        <ArrowLeft className="size-4" /> Другая почта
-      </button>
+    <form
+      className="flex flex-col gap-5"
+      noValidate
+      onSubmit={(event) => {
+        void form.handleSubmit(submit)(event);
+      }}
+    >
+      <Button variant="ghost" size="sm" className="w-fit" disabled={pending} onClick={onBack}>
+        <ArrowLeft />
+        Другая почта
+      </Button>
       <div>
-        <h1 className="text-2xl font-semibold">Введите код</h1>
-        <p className="mt-2 text-base text-muted-foreground">
-          Отправили {sent.codeLength} цифр на{" "}
-          <span className="font-medium text-foreground">
-            {sent.maskedEmail}
-          </span>
-          . Код действует {Math.round(sent.expiresInSec / 60)} минут.
+        <h1 id={`${id}-title`} className="text-2xl font-semibold">
+          Введите код
+        </h1>
+        <p id={`${id}-hint`} className="text-muted-foreground mt-2">
+          Отправили шесть цифр на <span className="text-foreground font-medium break-all">{email}</span>.{" "}
+          {unusable ? "Код больше не действует." : `Код действует ещё ${expiryLeft} с.`}
         </p>
       </div>
-      <OtpInput
-        value={code}
-        onChange={setCode}
-        onComplete={(v) => void submit(v)}
-        length={sent.codeLength}
-        errorKey={errorKey}
-        disabled={verify.isPending || locked}
-      />
-      <div className="min-h-5 text-center text-sm" aria-live="polite">
-        {locked ? (
-          <span className="text-danger">
-            Слишком много попыток. Вход откроется через{" "}
-            {Math.ceil(lockLeft / 60)} мин.
-          </span>
-        ) : (
-          message && <span className="text-danger">{message}</span>
-        )}
+      <div role="group" aria-labelledby={`${id}-title`} aria-describedby={`${id}-hint ${id}-error`}>
+        <Controller
+          control={form.control}
+          name="code"
+          render={({ field }) => (
+            <OtpInput
+              value={field.value}
+              onChange={field.onChange}
+              length={6}
+              errorKey={errorKey}
+              disabled={pending || unusable || locked}
+              aria-label="Код из письма, шесть цифр"
+            />
+          )}
+        />
+        <p id={`${id}-error`} className="text-danger mt-3 min-h-5 text-sm" aria-live="polite">
+          {exhausted
+            ? "Попытки для этого кода закончились — запросите новый."
+            : expired
+              ? "Код истёк — запросите новый."
+              : form.formState.errors.code?.message}
+        </p>
       </div>
+      {locked && (
+        <p role="status" className="text-warning-soft-foreground text-sm">
+          Повторить через {Math.max(lockLeft, requestLock)} с.
+        </p>
+      )}
+      {issue && (
+        <p role="alert" className="text-danger text-sm">
+          {issue.message}
+        </p>
+      )}
+      {/* Второй клик старой кнопки может попасть в новую форму после смены шага. */}
+      <Button
+        type="submit"
+        size="lg"
+        block
+        loading={verify.isPending}
+        disabled={pending || unusable || locked}
+        onClick={(event) => {
+          if (event.detail > 1) event.preventDefault();
+        }}
+      >
+        Войти
+      </Button>
       <Button
         variant="ghost"
-        onClick={() => void resend()}
-        disabled={resendLeft > 0 || locked}
+        loading={resendPending}
+        disabled={pending || resendLeft > 0 || locked}
+        onClick={() => void onResend()}
       >
-        {resendLeft > 0
-          ? `Отправить снова через ${resendLeft} с`
-          : "Отправить код ещё раз"}
+        {resendLeft > 0 ? `Отправить снова через ${resendLeft} с` : "Отправить код ещё раз"}
       </Button>
-    </div>
+    </form>
   );
 }

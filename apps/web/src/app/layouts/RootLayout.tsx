@@ -1,13 +1,9 @@
 import { useEffect, useLayoutEffect, useState } from "react";
 import { AnimatePresence, motion, useIsPresent } from "motion/react";
-import {
-  NavigationType,
-  useLocation,
-  useNavigate,
-  useNavigationType,
-  useOutlet,
-} from "react-router";
+import { NavigationType, useLocation, useNavigate, useNavigationType, useOutlet } from "react-router";
 import { setSessionLostHandler } from "@zapas/api";
+import { useQueryClient } from "@tanstack/react-query";
+import { resetPrivateSession, usePrivateQueries } from "@/entities/auth-profile";
 import { pageSwap } from "@zapas/tokens/motion";
 
 /** Уходящая страница держит последний кадр, пока проигрывается выход (иначе outlet сразу покажет новую). */
@@ -25,18 +21,23 @@ export function RootLayout() {
   const navType = useNavigationType();
   const outlet = useOutlet();
   const navigate = useNavigate();
+  const client = useQueryClient();
+  const { setPrivateQueries } = usePrivateQueries();
   const back = navType === NavigationType.Pop;
   const dir = back ? -1 : 1;
 
   useEffect(() => {
-    setSessionLostHandler(
-      () =>
-        void navigate("/login", {
+    setSessionLostHandler(() => {
+      setPrivateQueries(false);
+      void resetPrivateSession(client, null).then(() =>
+        navigate("/login", {
           replace: true,
           state: { from: location.pathname },
         }),
-    );
-  }, [navigate, location.pathname]);
+      );
+    });
+    return () => setSessionLostHandler(() => undefined);
+  }, [navigate, location.pathname, client, setPrivateQueries]);
 
   useLayoutEffect(() => {
     history.scrollRestoration = "manual";
@@ -50,9 +51,7 @@ export function RootLayout() {
       mode="wait"
       custom={dir}
       initial={false}
-      onExitComplete={() =>
-        window.scrollTo({ top: back ? (scroll.get(location.key) ?? 0) : 0 })
-      }
+      onExitComplete={() => window.scrollTo({ top: back ? (scroll.get(location.key) ?? 0) : 0 })}
     >
       <motion.div
         key={key}
