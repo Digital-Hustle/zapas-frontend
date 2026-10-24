@@ -11,6 +11,7 @@ import {
   Textarea,
   Field,
   MoneyInput,
+  Button,
 } from "../src/index.ts";
 
 export function FoundationExample() {
@@ -22,6 +23,11 @@ export function FoundationExample() {
       className="border-border bg-card flex min-w-0 flex-col gap-6 rounded-xl border p-4 md:p-6"
     >
       <h2 className="text-lg font-semibold">Импорт и состояния</h2>
+      <div aria-label="Варианты кнопок" role="group" className="flex flex-wrap gap-3">
+        <Button variant="danger">Удалить</Button>
+        <Button variant="danger-soft">Отменить</Button>
+        <Button variant="soft">Сохранить</Button>
+      </div>
       <Stepper
         currentId="review"
         steps={[

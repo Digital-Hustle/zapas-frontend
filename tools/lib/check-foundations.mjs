@@ -1,6 +1,6 @@
 import { Buffer } from "node:buffer";
 
-export async function checkFoundations(page, expect) {
+export async function checkFoundations(page, expect, audit = async () => undefined) {
   const area = page.getByRole("region", { name: "Импорт и состояния", exact: true });
   const input = area.locator('input[type="file"]');
   await input.setInputFiles({ name: "bank.csv", mimeType: "text/csv", buffer: Buffer.from("date,amount\n2026-10-24,100.00") });
@@ -22,4 +22,11 @@ export async function checkFoundations(page, expect) {
   await otp.getByRole("button", { name: "Отправить код ещё раз", exact: true }).click();
   await expect(otp.getByRole("button")).toBeDisabled();
   await expect(otp.getByRole("textbox")).toHaveValue("");
+  const buttons = area.getByRole("group", { name: "Варианты кнопок" });
+  for (const name of ["Удалить", "Отменить", "Сохранить"]) {
+    const button = buttons.getByRole("button", { name, exact: true });
+    await button.hover();
+    await button.evaluate((element) => Promise.all(element.getAnimations().map((animation) => animation.finished.catch(() => undefined))));
+    await audit();
+  }
 }

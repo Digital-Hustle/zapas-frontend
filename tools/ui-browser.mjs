@@ -31,12 +31,13 @@ try {
         if (dark) await page.getByRole("button", { name: "Тёмная тема", exact: true }).click();
         await checkSelectionControls(page, expect);
         await checkSlidersTabs(page, expect);
-        await checkFoundations(page, expect);
-        await checkNavigation(page, expect, async () => {
+        const auditOverlays = async () => {
           await page.waitForFunction(() => [...document.querySelectorAll('.zapas-popup,[role="dialog"],[role="alertdialog"]')].every((element) => getComputedStyle(element).opacity === "1"));
           const audit = await new AxeBuilder({ page }).withTags(["wcag2a", "wcag2aa", "wcag21aa", "wcag22aa"]).analyze();
           assert.deepEqual(audit.violations.map((v) => ({ id: v.id, nodes: v.nodes.map((n) => n.target) })), []);
-        });
+        };
+        await checkFoundations(page, expect, auditOverlays);
+        await checkNavigation(page, expect, auditOverlays);
         await page.evaluate(() =>
           Promise.all(document.getAnimations().map((animation) => animation.finished.catch(() => {}))),
         );
