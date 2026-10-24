@@ -17,7 +17,7 @@ const zones = {
     run("pnpm", ["-r", "--filter", "./apps/**", "--filter", "./packages/**", "run", "--if-present", "build"]);
   },
   tooling: () => {
-    run("node", ["--test", "tools/tests/repo.test.mjs", "tools/tests/authorship.test.mjs", "tools/tests/hub-sync.test.mjs", "tools/tests/preview-deploy.test.mjs"]);
+    run("node", ["--test", "tools/tests/repo.test.mjs", "tools/tests/authorship.test.mjs", "tools/tests/hub-sync.test.mjs", "tools/tests/preview-deploy.test.mjs", "tools/tests/contracts-mock.test.mjs", "tools/tests/node-version.test.mjs"]);
     run("node", ["tools/guard.mjs"]);
   },
   security: () => {

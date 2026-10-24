@@ -4,12 +4,14 @@
   "type": "module",
   "packageManager": "pnpm@10.34.7",
   "engines": {
-    "node": ">=24.0.0"
+    "node": ">=24.18.0"
   },
   "scripts": {
     "setup": "node tools/setup.mjs",
     "dev": "pnpm --filter @zapas/web dev",
     "dev:mock": "pnpm --filter @zapas/web dev:mock",
+    "contracts:mock": "node tools/contracts-mock.mjs",
+    "contracts:mock:web": "node tools/contracts-mock.mjs --with-web",
     "dev:ui": "pnpm --filter @zapas/web exec vite ../../packages/ui/examples --config vite.config.ts --port 5174 --strictPort",
     "test:ui-browser": "node tools/ui-browser.mjs",
     "test:demo-browser": "node tools/demo-browser.mjs",

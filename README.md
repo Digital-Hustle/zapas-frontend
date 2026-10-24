@@ -2,24 +2,36 @@
 
 Web-кабинет, админка, дизайн-система и API-клиент. Документы проекта — в хабе [Digital-Hustle/zapas](https://github.com/Digital-Hustle/zapas).
 
-**Статус:** лендинг с явно смоделированным графиком, FAQ и пояснением о точности; вход по коду на моках, базовый UI-кит, токены, API-клиент. Дашборд — skeleton, админка и интерактивные графики кабинета ещё не реализованы.
+**Статус (24.10.2026):** готовы лендинг, вход по email-коду, профиль и сессии, организации/счета
+(CRUD, архив, остатки), импорт CSV с отчётом, операции и категории (одиночная и массовая правка).
+Готовы UI-кит, токены, SDK v1 по четырём публичным контрактам и browser transport.
+**Не начаты** прогнозные экраны кабинета: dashboard, график остатка, разрывы, алерты, регулярности,
+планы и качество — это зона F1, работа приостановлена по команде владельца. `apps/admin` не создана
+(админка не входит в v1). Публичный preview работает на memory-only моках
+(`demo@example.test`, код `000123`); backend не подключён, `/api/*` возвращает 503.
 
 ## Быстрый старт
 ```bash
 pnpm install --frozen-lockfile
 node tools/setup.mjs        # хуки, локальный конфиг git, .claude/skills
 pnpm dev                    # web на http://localhost:5173, проксирует /api на localhost:8080
-pnpm dev:mock               # web против Prism-моков контрактов (http://localhost:4010)
+pnpm dev:mock               # web против Prism; сначала запустите contracts:mock
+pnpm contracts:mock         # только Prism-мок публичных контрактов на http://localhost:4010
+pnpm contracts:mock:web     # Prism + web одним процессом
 pnpm check                  # tokens, lint, typecheck, tests, build, contracts, security
 ```
 
-Требуется Node 24 и pnpm 10. Реальный backend не нужен для UI-работы: контракты синхронизированы из хаба, Prism отдаёт схемные ответы.
+Требуется Node 24.18+ и pnpm 10 (Prism требует Node >=24.18). Реальный backend не нужен для UI-работы:
+контракты синхронизированы из хаба. `contracts:mock` отдаёт схемные примеры четырёх публичных
+контрактов; auth, CSRF и сценарии с сохранением состояния покрывает встроенный preview API
+(`VITE_PREVIEW_MOCKS=1`). Мок не заменяет backend и не проверяет права доступа — подробности и
+ограничения в [docs/CONTRACT-MOCKS.md](docs/CONTRACT-MOCKS.md).
 
 ## Структура
 | Путь | Что | Владелец |
 |---|---|---|
 | `apps/web` | лендинг, кабинет, FSD-слои `app/pages/widgets/features/entities/shared` | F1 |
-| `apps/admin` | админка (ещё не создана) | F2 |
+| `apps/admin` | админка не входит в v1 (каталог-заглушка) | F2 |
 | `packages/tokens` | единственный источник дизайн-значений → CSS/JSON/документ | F2 |
 | `packages/ui` | Radix + motion, единые уведомления/диалоги | F2 |
 | `packages/charts` | базовый ForecastChart; интерактивный прогноз и план-факт — следующие задачи | F1 |

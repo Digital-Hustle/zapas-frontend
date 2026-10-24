@@ -50,6 +50,10 @@ payload/key при replay. Это проверка поведения интер
 авторизации. До cutover на уровне Caddy настоящий `/api/*` отвечал 503; теперь он
 проксируется в Gateway.
 
+Отдельно от деморежима есть Prism-мок схем (`pnpm contracts:mock`): он не хранит
+состояние и не изображает auth/CSRF/OTP — только примеры ответов контрактов для
+вёрстки. Разница и ограничения — [CONTRACT-MOCKS](CONTRACT-MOCKS.md).
+
 ## Удаление / переход на настоящий API
 
 1. Получить совместимые Gateway/Auth/Profile/Orchestrator/PreProcessor/Forecast,
