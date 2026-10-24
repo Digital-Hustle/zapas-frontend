@@ -31,7 +31,7 @@ pnpm check                  # tokens, lint, typecheck, tests, build, contracts, 
 | Путь | Что | Владелец |
 |---|---|---|
 | `apps/web` | лендинг, кабинет, FSD-слои `app/pages/widgets/features/entities/shared` | F1 |
-| `apps/admin` | админка (ещё не создана) | F2 |
+| `apps/admin` | админка не входит в v1 (каталог-заглушка) | F2 |
 | `packages/tokens` | единственный источник дизайн-значений → CSS/JSON/документ | F2 |
 | `packages/ui` | Radix + motion, единые уведомления/диалоги | F2 |
 | `packages/charts` | базовый ForecastChart; интерактивный прогноз и план-факт — следующие задачи | F1 |
