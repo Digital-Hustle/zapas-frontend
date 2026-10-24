@@ -23,6 +23,20 @@ traceId и явный retry (`offline` блокирует его). `Badge`, `Sta
 диапазоне, при reduced motion остаётся статичный текст. `toNumber` допустим только для
 координат, никогда для расчёта финансовых данных.
 
+MoneyInput также сохраняет до 17 цифр целой части и две копейки без Number,
+объединяет внутренний blur с RHF callback и оставляет неверный ввод для исправления.
+Для знакового остатка передать `allowNegative`; без него отрицательное значение
+отклоняется, а не превращается незаметно в положительное.
+
+OtpInput передаёт ref/id/name/onBlur/aria-describedby для формы, поддерживает
+`invalid`, paste/autocomplete, не завершает disabled-ввод и помещается в 360 px.
+`ResendCode` принимает абсолютный `resendAt` (epoch milliseconds) и `onResend`:
+новый deadline родитель берёт из ответа Auth/Profile, не выдумывает локально.
+`null`/неизвестный срок не разрешает немедленный повтор. Pending блокирует повтор,
+ошибка сохраняется без auto retry. Каретка/ошибка OTP учитывают reduced motion.
+Button `loading` всегда блокирует действие, включая явный `disabled={false}`;
+для `asChild` выставляются aria-disabled/busy, снимается Tab и блокируется click.
+
 Основа FileDrop: [react-dropzone 20.1.4](https://github.com/react-dropzone/react-dropzone), MIT.
 Проверки этого этапа: 41 UI unit-тест; 12 вариантов браузерной матрицы (360/768/1440,
 темы, reduced motion), выбор/отказ/очистка CSV, axe без нарушений. Витрина ниже содержит

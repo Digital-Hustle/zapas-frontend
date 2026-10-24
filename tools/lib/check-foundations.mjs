@@ -12,4 +12,14 @@ export async function checkFoundations(page, expect) {
   await expect(area.getByText("bank.csv", { exact: true })).toHaveCount(0);
   await expect(area.getByRole("progressbar", { name: "Обработка выписки" })).toHaveAttribute("aria-valuenow", "35");
   await expect(area.getByText("99 999 999 999 999 999,99 ₽", { exact: false })).toBeVisible();
+  const money = area.getByRole("textbox", { name: "Точная сумма платежа", exact: true });
+  await money.fill("9007199254740993,01");
+  await money.press("Tab");
+  await expect(money).toHaveValue(/9[\s\u00a0\u202f]007[\s\u00a0\u202f]199[\s\u00a0\u202f]254[\s\u00a0\u202f]740[\s\u00a0\u202f]993,01/);
+  const otp = page.getByRole("region", { name: "Код подтверждения", exact: true });
+  await otp.getByRole("textbox", { name: "Код для примера" }).fill("123456");
+  await expect(otp.getByTestId("otp-result")).toHaveText("Кодов для примера принято: 1");
+  await otp.getByRole("button", { name: "Отправить код ещё раз", exact: true }).click();
+  await expect(otp.getByRole("button")).toBeDisabled();
+  await expect(otp.getByRole("textbox")).toHaveValue("");
 }

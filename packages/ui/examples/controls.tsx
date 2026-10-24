@@ -7,6 +7,7 @@ import { SelectionExample } from "./SelectionExample.tsx";
 import { ScenarioExample } from "./ScenarioExample.tsx";
 import { FoundationExample } from "./FoundationExample.tsx";
 import { NavigationExample } from "./NavigationExample.tsx";
+import { OtpExample } from "./OtpExample.tsx";
 
 const options = [
   { value: "rent", label: "Аренда" },
@@ -54,6 +55,7 @@ function Controls() {
             <SelectionExample />
             <ScenarioExample />
             <FoundationExample />
+            <OtpExample />
             <NavigationExample />
             <section
               aria-label="Состояния"

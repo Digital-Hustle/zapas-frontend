@@ -34,6 +34,12 @@ security headers, cache policy, JS assets, закрытые `.env/.git/internal/
 
 ## Повтор и ручная проверка
 
+Первый реальный запуск CD после merge #16:
+[Actions #40048405718](https://github.com/Digital-Hustle/zapas-frontend/actions/runs/40048405718)
+успешно опубликовал `853556046b26f731b29c4ac619c1ead02fa0edb3`.
+Публичный deployment.json подтвердил SHA. Последующие версии проверяются тем же
+workflow; текущий SHA всегда брать из deployment.json.
+
 Если новый main появился во время сборки, дождаться его CI/CD. Если текущий deploy
 упал из-за временного сбоя, повторить workflow run после устранения причины.
 Повтор использует тот же неизменяемый release; содержимое не перезаписывается.

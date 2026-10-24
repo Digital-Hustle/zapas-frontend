@@ -338,6 +338,7 @@ export const motion = {
     spin: 0.8,
     skeleton: 1.4,
     tooltip: 0.3,
+    caret: 1.1,
   },
   stagger: { step: 0.035, max: 8 },
   distance: { enter: 12, exit: 8, lift: 3, slide: 24, shake: 6 },
