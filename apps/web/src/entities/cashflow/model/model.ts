@@ -447,6 +447,7 @@ export function mapOrigin(value: unknown) {
   return {
     date: item.asOfDate,
     evaluated: item.status === "EVALUATED",
+    status: item.status,
     reason: item.reason,
     days: item.evaluatedDays,
     mae: item.maeBalance,
