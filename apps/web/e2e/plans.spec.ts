@@ -168,7 +168,7 @@ test("cancelling the unpaid part sends the explicit reason, version and key", as
   await page.getByRole("button", { name: "Отменить неоплаченную часть", exact: true }).click();
   await page.getByLabel("Причина отмены", { exact: true }).fill("Согласовано с контрагентом");
   await page.getByRole("button", { name: "Подтвердить отмену", exact: true }).click();
-  await expect(page.getByText(/CANCELLED/)).toBeVisible();
+  await expect(page.getByText(/Отменён/)).toBeVisible();
   const call = state.requests.find((row) => row.path.endsWith("/cancel"));
   expect(call?.body).toEqual({ reason: "Согласовано с контрагентом" });
   expect(call?.headers["if-match"]).toBe('"1"');

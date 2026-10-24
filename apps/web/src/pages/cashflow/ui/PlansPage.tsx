@@ -34,6 +34,21 @@ import { MoneyInput } from "@zapas/ui";
 import { NoRows, QueryState, ReadOnly, Section } from "./parts.tsx";
 import { useRefresh, visible } from "../model/helpers.ts";
 
+const statusNames = {
+  OPEN: "Открыт",
+  PARTIALLY_SETTLED: "Частично оплачен",
+  SETTLED: "Исполнен",
+  CANCELLED: "Отменён",
+  UNKNOWN: "Неизвестное состояние",
+} as const;
+const sourceNames = {
+  MANUAL: "Ручной план",
+  INVOICE: "Счёт",
+  TAX: "Налог из реестра",
+  CONTRACT: "Договор",
+  UNKNOWN: "Неизвестный источник",
+} as const;
+
 const editorSchema = planDraftSchema
   .safeExtend({ additionalConfirmed: z.boolean() })
   .refine((value) => value.relation !== "ADDITIONAL" || value.additionalConfirmed, {
@@ -505,7 +520,7 @@ function PlanDetail({ scope, id, onClose }: { scope: BusinessScope; id: string; 
         <>
           <h3 className="text-lg font-semibold break-words">{query.data.title}</h3>
           <p>
-            Дата: {query.data.dueDate} · {query.data.source}
+            Дата: {query.data.dueDate} · {sourceNames[query.data.source]}
           </p>
           <div className="grid gap-3 sm:grid-cols-3">
             {[
@@ -515,7 +530,11 @@ function PlanDetail({ scope, id, onClose }: { scope: BusinessScope; id: string; 
             ].map(([label, amount]) => (
               <div key={label}>
                 <p className="text-muted-foreground text-sm">{label}</p>
-                {amount === undefined ? <p>Нет данных</p> : <Amount value={amount} animated={false} />}
+                {amount === undefined ? (
+                  <p>Нет данных</p>
+                ) : (
+                  <Amount value={amount} animated={false} className="break-all" />
+                )}
               </div>
             ))}
           </div>
@@ -607,7 +626,7 @@ function PlanDetail({ scope, id, onClose }: { scope: BusinessScope; id: string; 
               )}
               {allocations.data.items.map((item) => (
                 <div key={item.id} className="border-border space-y-3 rounded-md border p-4">
-                  <Amount value={item.amount} animated={false} />
+                  <Amount value={item.amount} animated={false} className="break-all" />
                   <p className="text-muted-foreground text-sm break-all">Операция {item.paymentId}</p>
                   {scope.writable && scope.company.permissions.canManagePlans && !query.isError && (
                     <VersionedForm
@@ -878,11 +897,11 @@ function Plans({ scope }: { scope: BusinessScope }) {
                       : item.direction === "OUT"
                         ? "Списание"
                         : "Неизвестное направление"}{" "}
-                    · {item.status}
+                    · {statusNames[item.status]}
                   </p>
                   {item.overdue && <Badge tone="warning">Просрочен · уточните дату</Badge>}
                   <p className="text-sm">
-                    Осталось <Amount value={item.remainingAmount} animated={false} />
+                    Осталось <Amount value={item.remainingAmount} animated={false} className="break-all" />
                   </p>
                   <Button
                     size="sm"
