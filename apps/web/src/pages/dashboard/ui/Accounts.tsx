@@ -9,6 +9,7 @@ import { accessDenied } from "@/shared/api/problem.ts";
 import { CreateAccountForm } from "@/features/create-workspace";
 import { QueryIssue, Loading, Pagination } from "./WorkspaceParts.tsx";
 import { AccountActions } from "./WorkspaceActions.tsx";
+import { accountPath } from "@/shared/lib/workspace-path.ts";
 
 export function Accounts({
   company,
@@ -143,6 +144,20 @@ export function Accounts({
             <h3 id="selected-account" className="text-lg font-semibold break-words">
               Выбранный счёт: {selected.data.name}
             </h3>
+            <div className="mt-4 flex flex-wrap gap-3">
+              <Link
+                to={accountPath("imports", company.id, selected.data.id)}
+                className={buttonVariants({ size: "sm" })}
+              >
+                История и импорт CSV
+              </Link>
+              <Link
+                to={accountPath("payments", company.id, selected.data.id)}
+                className={buttonVariants({ variant: "secondary", size: "sm" })}
+              >
+                Операции счёта
+              </Link>
+            </div>
             <p className="text-muted-foreground mt-2 text-sm break-all">
               Номер: {selected.data.accountNumber ?? "Не указан"}
             </p>
@@ -174,12 +189,6 @@ export function Accounts({
               stale={stale || accounts.isError || selected.isError}
               recovery={recovery}
             />
-            <Link
-              to={`/app/imports?company=${company.id}&account=${selected.data.id}`}
-              className={buttonVariants({ variant: "secondary", size: "sm", className: "mt-4 w-fit" })}
-            >
-              История и импорт CSV
-            </Link>
           </section>
         )}
       {creating && writable && (

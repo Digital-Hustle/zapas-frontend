@@ -337,7 +337,7 @@ test("unknown outcome blocks navigation until the user chooses to leave and chec
   await page.getByRole("link", { name: "К организации и счёту", exact: true }).click();
   dialog = page.getByRole("dialog", { name: "Покинуть импорт?", exact: true });
   await dialog.getByRole("button", { name: "Перейти и проверить историю", exact: true }).click();
-  await expect(page).toHaveURL(new RegExp(`/app\\?company=${companyId}`));
+  await expect(page).toHaveURL(new RegExp(`/app/company/${companyId}`));
   expect(state.calls).toHaveLength(1);
 });
 

@@ -1,16 +1,15 @@
 import { roleName, legalForm } from "./labels.ts";
 import { useCallback, useState } from "react";
-import { Link, useNavigate, useSearchParams } from "react-router";
+import { Link, Navigate, useNavigate, useSearchParams } from "react-router";
 import { useIsMutating, useQueryClient } from "@tanstack/react-query";
 import { z } from "zod";
 import { Badge, Button, EmptyState, ErrorState, buttonVariants, notify } from "@zapas/ui";
 import { resetPrivateSession, usePrivateQueries, useSessionRecovery } from "@/entities/auth-profile";
-import { useCompanies, useCompany, workspaceKeys, type Company } from "@/entities/workspace";
+import { useCompanies, workspaceKeys, type Company } from "@/entities/workspace";
 import { CreateCompanyForm } from "@/features/create-workspace";
 import { accessDenied } from "@/shared/api/problem.ts";
 import { Logo } from "@/shared/ui";
-import { Accounts } from "./Accounts.tsx";
-import { CompanyActions } from "./WorkspaceActions.tsx";
+import { companyPath } from "@/shared/lib/workspace-path.ts";
 import { QueryIssue, Loading, Pagination } from "./WorkspaceParts.tsx";
 
 function scopeId(value: string | null) {
@@ -21,13 +20,12 @@ export function DashboardPage() {
   const client = useQueryClient();
   const navigate = useNavigate();
   const { privateQueries, setPrivateQueries } = usePrivateQueries();
-  const [params, setParams] = useSearchParams();
+  const [params] = useSearchParams();
   const [page, setPage] = useState(0);
   const [creating, setCreating] = useState(false);
   const companyId = scopeId(params.get("company"));
   const accountId = scopeId(params.get("account"));
   const companies = useCompanies(page, privateQueries);
-  const selected = useCompany(companyId, privateQueries);
   const busy = useIsMutating() > 0;
   const end = useCallback(async () => {
     setPrivateQueries(false);
@@ -60,8 +58,10 @@ export function DashboardPage() {
   );
   const chooseCompany = (company: Company) => {
     client.setQueryData(workspaceKeys.company(company.id), company);
-    setParams({ company: company.id });
+    void navigate(companyPath(company.id));
   };
+  if (companyId && (!params.has("account") || accountId))
+    return <Navigate to={companyPath(companyId, accountId)} replace />;
   return (
     <div className="bg-background min-h-svh">
       <header className="border-border border-b">
@@ -138,7 +138,6 @@ export function DashboardPage() {
                     </div>
                     <div className="flex flex-wrap items-center gap-3">
                       {company.archived && <Badge>В архиве</Badge>}
-                      {company.id === companyId && <Badge tone="success">Выбрана</Badge>}
                       <Button
                         variant="secondary"
                         size="sm"
@@ -161,34 +160,9 @@ export function DashboardPage() {
             </>
           )}
         </section>
-        {companyId && selected.isPending && <Loading label="Загрузка выбранной организации" />}
-        {companyId && selected.isError && (
-          <QueryIssue
-            error={selected.error}
-            saved={Boolean(selected.data)}
-            pending={selected.isFetching}
-            onRetry={() => void selected.refetch()}
-            recovery={recoveryAction}
-          />
-        )}
-        {selected.data &&
-          !(companies.isError && accessDenied(companies.error)) &&
-          !(selected.isError && accessDenied(selected.error)) && (
-            <div className="space-y-6" key={selected.data.id}>
-              <CompanyActions company={selected.data} stale={selected.isError} recovery={recoveryAction} />
-              <Accounts
-                key={selected.data.id}
-                company={selected.data}
-                accountId={accountId}
-                stale={selected.isError}
-                recovery={recoveryAction}
-                onAccount={(id) => setParams({ company: selected.data.id, account: id })}
-              />
-            </div>
-          )}
         {!companyId && companies.data && companies.data.items.length > 0 && (
           <p role="status" className="text-muted-foreground">
-            Выберите организацию, чтобы увидеть её счета.
+            Откройте бизнес, чтобы увидеть его счета и перейти к загрузке выписки.
           </p>
         )}
         {creating && (

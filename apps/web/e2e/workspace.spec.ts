@@ -460,12 +460,13 @@ test("switching company clears account selection and preserves exact negative ba
   page,
 }) => {
   const state = await service(page, true);
-  await page.goto(`/app?company=${companyId}&account=${accountId}`);
+  await page.goto(`/app/company/${companyId}?account=${accountId}`);
   const selected = page.getByRole("region", { name: "Выбранный счёт: Основной счёт", exact: true });
   await expect(selected).toBeVisible();
   expect((await selected.textContent())?.replace(/\s/gu, "")).toContain("−99999999999999999,99₽");
+  await page.getByRole("link", { name: "Назад к организациям", exact: true }).click();
   await page.getByRole("button", { name: "Выбрать организацию Вторая компания", exact: true }).click();
-  await expect(page).toHaveURL(new RegExp(`company=${secondId}$`));
+  await expect(page).toHaveURL(new RegExp(`/app/company/${secondId}$`));
   await expect(page.getByRole("heading", { name: "Второй счёт", exact: true })).toBeVisible();
   await expect(page.getByRole("heading", { name: "Выбранный счёт: Основной счёт", exact: true })).toHaveCount(
     0,
@@ -500,7 +501,7 @@ test("outage preserves cached lists; resource 404 and malformed scope do not rev
   expect(state.listCalls).toBe(2);
   state.failList = false;
   state.denyCompany = true;
-  await page.goto(`/app?company=${companyId}&account=${accountId}`);
+  await page.goto(`/app/company/${companyId}?account=${accountId}`);
   await expect(page.getByRole("heading", { name: "Нет доступа к ресурсу", exact: true })).toBeVisible();
   await expect(page.getByRole("heading", { name: "Выбранный счёт: Основной счёт", exact: true })).toHaveCount(
     0,
@@ -540,8 +541,9 @@ test("switching company aborts its unfinished account request and rejects the la
   await page.getByRole("button", { name: "Выбрать организацию Первая компания", exact: true }).click();
   await waiting;
   const aborted = page.waitForEvent("requestfailed", (request) => new URL(request.url()).pathname === path);
-  await page.getByRole("button", { name: "Выбрать организацию Вторая компания", exact: true }).click();
+  await page.getByRole("link", { name: "Назад к организациям", exact: true }).click();
   await aborted;
+  await page.getByRole("button", { name: "Выбрать организацию Вторая компания", exact: true }).click();
   await expect(page.getByRole("heading", { name: "Второй счёт", exact: true })).toBeVisible();
   release();
   await expect(page.getByRole("heading", { name: "Основной счёт", exact: true })).toHaveCount(0);

@@ -26,6 +26,8 @@ import { BulkCategoryForm } from "@/features/change-payment-category";
 import { financialKeys } from "@/shared/api/financialKeys.ts";
 import { accessDenied } from "@/shared/api/problem.ts";
 import { Logo } from "@/shared/ui";
+import { WorkspaceNavigation } from "@/widgets/business-workspace";
+import { companyPath } from "@/shared/lib/workspace-path.ts";
 import { Loading, Pagination, QueryIssue } from "@/shared/ui/BusinessData.tsx";
 import { initialPaymentFilters } from "../model/filters.ts";
 import { PaymentFiltersForm } from "./PaymentFilters.tsx";
@@ -304,7 +306,7 @@ export function PaymentsPage() {
         <div className="max-w-content mx-auto flex flex-wrap items-center justify-between gap-3 px-6 py-4">
           <Logo to="/app" />
           <Link
-            to={valid ? `/app?company=${companyId}&account=${accountId}` : "/app"}
+            to={valid ? companyPath(companyId, accountId) : "/app"}
             className={buttonVariants({ variant: "secondary", size: "sm" })}
           >
             К организации и счёту
@@ -353,13 +355,16 @@ export function PaymentsPage() {
               account.data &&
               !(company.isError && accessDenied(company.error)) &&
               !(account.isError && accessDenied(account.error)) && (
-                <PaymentsWorkspace
-                  key={`${companyId}/${accountId}`}
-                  company={company.data}
-                  account={account.data}
-                  stale={company.isError || account.isError}
-                  recovery={recoveryAction}
-                />
+                <div className="space-y-6">
+                  <WorkspaceNavigation companyId={company.data.id} accountId={account.data.id} />
+                  <PaymentsWorkspace
+                    key={`${companyId}/${accountId}`}
+                    company={company.data}
+                    account={account.data}
+                    stale={company.isError || account.isError}
+                    recovery={recoveryAction}
+                  />
+                </div>
               )}
           </>
         )}
