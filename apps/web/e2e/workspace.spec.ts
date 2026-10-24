@@ -71,10 +71,20 @@ async function service(page: Page, seed = false, role = "OWNER", archived = fals
     listCalls: 0,
     companyPosts: [] as { body: unknown; key: string }[],
     accountPosts: [] as { body: unknown; key: string }[],
+    companyPuts: [] as { body: unknown; match: string }[],
+    accountPuts: [] as { body: unknown; match: string }[],
+    archivePosts: [] as { path: string; key: string; match: string }[],
+    anchorPosts: [] as { body: unknown; key: string }[],
+    dropAccountPut: false,
+    dropArchiveResponse: false,
+    dropAnchorResponse: false,
+    failConflictRead: false,
+    denyWrite: false,
     requests: [] as string[],
     problems: [] as string[],
   };
   const commands = new Map<string, ReturnType<typeof company>>();
+  const managementCommands = new Map<string, unknown>();
   await page.route("**/api/v1/**", async (route) => {
     const request = route.request();
     const url = new URL(request.url());
@@ -153,7 +163,28 @@ async function service(page: Page, seed = false, role = "OWNER", archived = fals
     const parts = path.slice(root.length).split("/").filter(Boolean);
     const scope = state.companies.find(({ id }) => id === parts[0]);
     if (scope && parts.length === 1 && method === "GET")
-      return state.denyCompany ? problem(404, "NOT_FOUND") : json(scope);
+      return state.denyCompany
+        ? problem(404, "NOT_FOUND")
+        : state.failConflictRead
+          ? problem(503, "DEPENDENCY_UNAVAILABLE")
+          : json(scope);
+    if (scope && method === "PUT" && parts.length === 1) {
+      const body = z
+        .object({
+          name: z.string(),
+          legalForm: z.string(),
+          inn: z.string().nullable(),
+          kpp: z.string().nullable(),
+          timezone: z.literal("Europe/Moscow"),
+        })
+        .strict()
+        .parse(request.postDataJSON());
+      state.companyPuts.push({ body, match: headers["if-match"] ?? "" });
+      if (scope.myRole !== "OWNER") return problem(403, "FORBIDDEN");
+      if (headers["if-match"] !== `"${scope.version}"`) return problem(409, "VERSION_CONFLICT");
+      Object.assign(scope, body, { version: scope.version + 1 });
+      return json(scope);
+    }
     if (scope && parts[1] === "accounts" && parts.length === 2 && method === "GET")
       return paged(state.accounts.filter(({ companyId: id }) => id === scope.id));
     if (scope && parts[1] === "accounts" && parts.length === 2 && method === "POST") {
@@ -183,7 +214,80 @@ async function service(page: Page, seed = false, role = "OWNER", archived = fals
       const value = state.accounts.find(
         ({ id, companyId: company }) => id === parts[2] && company === scope.id,
       );
-      return value ? json(value) : problem(404, "NOT_FOUND");
+      if (!value) return problem(404, "NOT_FOUND");
+      if (method === "GET")
+        return state.failConflictRead ? problem(503, "DEPENDENCY_UNAVAILABLE") : json(value);
+      if (method === "PUT") {
+        const body = z
+          .object({
+            name: z.string(),
+            bankName: z.string().nullable(),
+            accountNumber: z.string().nullable(),
+            externalCompanyId: z.string().nullable(),
+          })
+          .strict()
+          .parse(request.postDataJSON());
+        state.accountPuts.push({ body, match: headers["if-match"] ?? "" });
+        if (state.denyWrite) {
+          scope.myRole = "VIEWER";
+          scope.permissions.canEditCompany = false;
+          return problem(403, "FORBIDDEN");
+        }
+        if (headers["if-match"] !== `"${value.version}"`) return problem(409, "VERSION_CONFLICT");
+        Object.assign(value, body, { version: value.version + 1 });
+        if (state.dropAccountPut) {
+          state.dropAccountPut = false;
+          return route.abort("failed");
+        }
+        return json(value);
+      }
+    }
+    if (scope && method === "POST" && parts.at(-1) === "archive") {
+      const value =
+        parts.length === 2
+          ? scope
+          : state.accounts.find(({ id, companyId }) => id === parts[2] && companyId === scope.id);
+      if (!value) return problem(404, "NOT_FOUND");
+      const key = z.uuid().parse(headers["idempotency-key"]);
+      state.archivePosts.push({ path, key, match: headers["if-match"] ?? "" });
+      if (scope.myRole !== "OWNER") return problem(403, "FORBIDDEN");
+      const replay = managementCommands.get(`${path}:${key}`);
+      if (replay) return json(replay);
+      if (headers["if-match"] !== `"${value.version}"`) return problem(409, "VERSION_CONFLICT");
+      Object.assign(value, { archived: true, version: value.version + 1 });
+      managementCommands.set(`${path}:${key}`, { ...value });
+      if (state.dropArchiveResponse) {
+        state.dropArchiveResponse = false;
+        return route.abort("failed");
+      }
+      return json(value);
+    }
+    if (scope && method === "POST" && parts.at(-1) === "balance-anchors") {
+      const value = state.accounts.find(({ id, companyId }) => id === parts[2] && companyId === scope.id);
+      if (!value) return problem(404, "NOT_FOUND");
+      const key = z.uuid().parse(headers["idempotency-key"]);
+      const body = z
+        .object({ date: z.iso.date(), balance: z.string(), reason: z.string() })
+        .strict()
+        .parse(request.postDataJSON());
+      state.anchorPosts.push({ body, key });
+      const replay = managementCommands.get(`${path}:${key}`);
+      if (replay) return json(replay);
+      const anchor = {
+        id: crypto.randomUUID(),
+        accountId: value.id,
+        ...body,
+        source: "MANUAL",
+        createdAt: time,
+      };
+      managementCommands.set(`${path}:${key}`, anchor);
+      if (value.latestBalanceDate === null || body.date >= value.latestBalanceDate)
+        Object.assign(value, { latestBalance: body.balance, latestBalanceDate: body.date });
+      if (state.dropAnchorResponse) {
+        state.dropAnchorResponse = false;
+        return route.abort("failed");
+      }
+      return json(anchor, 201);
     }
     state.problems.push(`unexpected endpoint ${method} ${path}`);
     return problem(404, "NOT_FOUND");
@@ -191,6 +295,14 @@ async function service(page: Page, seed = false, role = "OWNER", archived = fals
   return state;
 }
 async function audit(page: Page) {
+  await expect(page.locator('button[aria-busy="true"]')).toHaveCount(0);
+  await expect
+    .poll(() =>
+      page
+        .locator("button:not(:disabled) > span")
+        .evaluateAll((elements) => elements.every((element) => getComputedStyle(element).opacity === "1")),
+    )
+    .toBe(true);
   const result = await new AxeBuilder({ page }).analyze();
   expect(result.violations.filter(({ impact }) => impact === "serious" || impact === "critical")).toEqual([]);
 }
@@ -453,4 +565,298 @@ test("company pagination uses server pages without carrying old cards into the n
   await page.getByRole("button", { name: "Назад", exact: true }).click();
   await expect(page.getByRole("heading", { name: "Организация 1", exact: true })).toBeVisible();
   expect(state.problems).toEqual([]);
+});
+
+async function selectAnchorDate(page: Page, day = 24) {
+  await page.getByRole("button", { name: "Дата остатка", exact: true }).click();
+  await page.getByRole("button", { name: new RegExp(`^.*${day} октября`) }).click();
+}
+async function settledToasts(page: Page) {
+  await page.mouse.move(0, 0);
+  await expect(page.getByRole("button", { name: "Закрыть уведомление", exact: true })).toHaveCount(0, {
+    timeout: 7000,
+  });
+}
+const selectedScope = `/app?company=${companyId}&account=${accountId}`;
+for (const width of [360, 768, 1440]) {
+  for (const colorScheme of ["light", "dark"] as const) {
+    test.describe(`management ${width}px ${colorScheme}`, () => {
+      test.use({ viewport: { width, height: 1000 }, colorScheme, reducedMotion: "reduce" });
+      test("edits full requisites, records exact signed balance and archives with keyboard", async ({
+        page,
+      }, testInfo) => {
+        await page.clock.setFixedTime(new Date(time));
+        const state = await service(page, true);
+        await page.goto(selectedScope);
+        await page.getByRole("button", { name: "Редактировать организацию", exact: true }).click();
+        let dialog = await settledDialog(page);
+        await page.getByLabel("Название организации", { exact: true }).fill("Обновлённая компания");
+        await page.getByLabel("ИНН", { exact: true }).fill("001234567890");
+        await audit(page);
+        await page.screenshot({
+          path: testInfo.outputPath(`company-edit-${width}-${colorScheme}.png`),
+          fullPage: true,
+        });
+        await dialog.getByRole("button", { name: "Сохранить изменения", exact: true }).focus();
+        await page.keyboard.press("Enter");
+        await expect(dialog).not.toBeVisible();
+        expect(state.companyPuts).toEqual([
+          {
+            match: '"1"',
+            body: {
+              name: "Обновлённая компания",
+              legalForm: "OOO",
+              inn: "001234567890",
+              kpp: null,
+              timezone: "Europe/Moscow",
+            },
+          },
+        ]);
+        await page.getByRole("button", { name: "Редактировать счёт", exact: true }).click();
+        dialog = await settledDialog(page);
+        await page.getByLabel("Название счёта", { exact: true }).fill("Расчётный счёт");
+        await page.getByLabel("Банк", { exact: true }).fill("");
+        await page.getByLabel("ID компании в выписке", { exact: true }).fill("C001");
+        await audit(page);
+        await dialog
+          .getByRole("button", { name: "Сохранить изменения", exact: true })
+          .click({ clickCount: 2 });
+        await expect(dialog).not.toBeVisible();
+        expect(state.accountPuts).toEqual([
+          {
+            match: '"1"',
+            body: {
+              name: "Расчётный счёт",
+              bankName: null,
+              accountNumber: "00000000000000000001",
+              externalCompanyId: "C001",
+            },
+          },
+        ]);
+        await settledToasts(page);
+        await page.getByRole("button", { name: "Указать остаток", exact: true }).click();
+        dialog = await settledDialog(page);
+        await selectAnchorDate(page);
+        await page.getByLabel("Остаток, ₽", { exact: true }).fill("-99999999999999999.99");
+        await page.getByLabel("Основание", { exact: true }).fill("Сверено с банком");
+        await page.getByLabel("Основание", { exact: true }).press("Tab");
+        await audit(page);
+        await page.screenshot({
+          path: testInfo.outputPath(`balance-form-${width}-${colorScheme}.png`),
+          fullPage: true,
+        });
+        await dialog.getByRole("button", { name: "Сохранить остаток", exact: true }).click({ clickCount: 2 });
+        await expect(
+          dialog.getByText("Сохранён ручной остаток на 2026-10-24.", { exact: true }),
+        ).toBeVisible();
+        expect(state.anchorPosts).toHaveLength(1);
+        expect(state.anchorPosts[0]?.body).toEqual({
+          date: "2026-10-24",
+          balance: "-99999999999999999.99",
+          reason: "Сверено с банком",
+        });
+        expect(await dialog.innerText()).toContain("−99 999 999 999 999 999,99");
+        await audit(page);
+        await dialog.getByRole("button", { name: "Готово", exact: true }).focus();
+        await page.keyboard.press("Enter");
+        await settledToasts(page);
+        await page.getByRole("button", { name: "Архивировать счёт", exact: true }).click();
+        dialog = await settledDialog(page);
+        await audit(page);
+        await page.screenshot({
+          path: testInfo.outputPath(`archive-${width}-${colorScheme}.png`),
+          fullPage: true,
+        });
+        await dialog.getByRole("button", { name: "Архивировать", exact: true }).focus();
+        await page.keyboard.press("Enter");
+        await expect(page.getByText("Счёт в архиве. Доступен просмотр.", { exact: true })).toBeVisible();
+        await expect(page.getByRole("button", { name: "Редактировать счёт", exact: true })).toHaveCount(0);
+        expect(state.archivePosts[0]?.match).toBe('"2"');
+        expect(state.problems).toEqual([]);
+        expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
+      });
+    });
+  }
+}
+
+test("version conflict preserves draft and requires a choice and a separate save", async ({ page }) => {
+  const state = await service(page, true);
+  await page.goto(selectedScope);
+  await page.getByRole("button", { name: "Редактировать организацию", exact: true }).click();
+  await page.getByLabel("Название организации", { exact: true }).fill("Мой вариант");
+  Object.assign(state.companies[0] ?? {}, { name: "Изменено другой сессией", inn: "0099999999", version: 7 });
+  await page.getByRole("button", { name: "Сохранить изменения", exact: true }).click();
+  await expect(page.getByText("Изменено другой сессией · OOO", { exact: true })).toBeVisible();
+  await expect(page.getByLabel("Название организации", { exact: true })).toHaveValue("Мой вариант");
+  await expect(page.getByRole("button", { name: "Сохранить изменения", exact: true })).toBeDisabled();
+  expect(state.companyPuts).toHaveLength(1);
+  await page.getByRole("button", { name: "Оставить мой вариант", exact: true }).click();
+  expect(state.companyPuts).toHaveLength(1);
+  await page.getByRole("button", { name: "Сохранить изменения", exact: true }).click();
+  await expect(page.getByRole("dialog")).not.toBeVisible();
+  expect(state.companyPuts.map(({ match }) => match)).toEqual(['"1"', '"7"']);
+  expect(state.companies[0]?.name).toBe("Мой вариант");
+  expect(state.problems).toEqual([]);
+});
+
+test("lost PUT response reads the current account and never blindly retries", async ({ page }) => {
+  const state = await service(page, true);
+  state.dropAccountPut = true;
+  await page.goto(selectedScope);
+  await page.getByRole("button", { name: "Редактировать счёт", exact: true }).click();
+  await page.getByLabel("Название счёта", { exact: true }).fill("Сохранённый, но ответ потерян");
+  await page.getByRole("button", { name: "Сохранить изменения", exact: true }).click();
+  await expect(page.getByText("Актуальные реквизиты:", { exact: true })).toBeVisible();
+  expect(state.accountPuts).toHaveLength(1);
+  await expect(page.getByRole("button", { name: "Сохранить изменения", exact: true })).toBeDisabled();
+  await page.getByRole("button", { name: "Загрузить актуальные данные", exact: true }).click();
+  await expect(page.getByLabel("Название счёта", { exact: true })).toHaveValue(
+    "Сохранённый, но ответ потерян",
+  );
+  expect(state.accountPuts).toHaveLength(1);
+  await page.getByLabel("Название счёта", { exact: true }).fill("Ещё одна явная правка");
+  await page.getByRole("button", { name: "Сохранить изменения", exact: true }).click();
+  await expect(page.getByRole("dialog")).not.toBeVisible();
+  expect(state.accountPuts.map(({ match }) => match)).toEqual(['"1"', '"2"']);
+});
+
+test("conflict read outage retains the draft and prevents writes until a successful read", async ({
+  page,
+}) => {
+  const state = await service(page, true);
+  await page.goto(selectedScope);
+  await page.getByRole("button", { name: "Редактировать счёт", exact: true }).click();
+  await page.getByLabel("Название счёта", { exact: true }).fill("Не потерять");
+  Object.assign(state.accounts[0] ?? {}, { version: 9 });
+  state.failConflictRead = true;
+  await page.getByRole("button", { name: "Сохранить изменения", exact: true }).click();
+  await expect(
+    page.getByText("Сервис временно недоступен. Попробуйте позже.", { exact: true }).first(),
+  ).toBeVisible();
+  await expect(page.getByLabel("Название счёта", { exact: true })).toHaveValue("Не потерять");
+  await expect(page.getByRole("button", { name: "Оставить мой вариант", exact: true })).toHaveCount(0);
+  state.failConflictRead = false;
+  await page.getByRole("button", { name: "Перечитать данные", exact: true }).click();
+  await page.getByRole("button", { name: "Оставить мой вариант", exact: true }).click();
+  expect(state.accountPuts).toHaveLength(1);
+  await page.getByRole("button", { name: "Сохранить изменения", exact: true }).click();
+  await expect(page.getByRole("dialog")).not.toBeVisible();
+  expect(state.accountPuts.at(-1)?.match).toBe('"9"');
+});
+
+test("archive lost response replays the original key and version before checking the new version", async ({
+  page,
+}) => {
+  const state = await service(page, true);
+  state.dropArchiveResponse = true;
+  await page.goto(selectedScope);
+  await page.getByRole("button", { name: "Архивировать счёт", exact: true }).click();
+  await page.getByRole("button", { name: "Архивировать", exact: true }).click();
+  await expect(page.getByRole("button", { name: "Повторить отправку", exact: true })).toBeVisible();
+  await page.getByRole("button", { name: "Повторить отправку", exact: true }).click();
+  await expect(page.getByText("Счёт в архиве. Доступен просмотр.", { exact: true })).toBeVisible();
+  expect(state.archivePosts).toHaveLength(2);
+  expect(state.archivePosts[1]).toEqual(state.archivePosts[0]);
+});
+
+test("archive version conflict requires reread, explicit adoption and a new confirmed command", async ({
+  page,
+}) => {
+  const state = await service(page, true);
+  await page.goto(selectedScope);
+  await page.getByRole("button", { name: "Архивировать организацию", exact: true }).click();
+  Object.assign(state.companies[0] ?? {}, { version: 5 });
+  await page.getByRole("button", { name: "Архивировать", exact: true }).click();
+  await expect(page.getByRole("button", { name: "Архивировать", exact: true })).toBeDisabled();
+  await page.getByRole("button", { name: "Перечитать перед архивированием", exact: true }).click();
+  await page.getByRole("button", { name: "Использовать актуальную версию", exact: true }).click();
+  expect(state.archivePosts).toHaveLength(1);
+  await page.getByRole("button", { name: "Архивировать", exact: true }).click();
+  await expect(
+    page.getByText("Организация в архиве. Доступен просмотр сохранённых данных.", { exact: true }),
+  ).toBeVisible();
+  expect(state.archivePosts.map(({ match }) => match)).toEqual(['"1"', '"5"']);
+  expect(state.archivePosts[1]?.key).not.toBe(state.archivePosts[0]?.key);
+});
+
+test("balance anchor lost response preserves exact payload and never replaces latest balance with an older anchor", async ({
+  page,
+}) => {
+  await page.clock.setFixedTime(new Date(time));
+  const state = await service(page, true);
+  state.dropAnchorResponse = true;
+  await page.goto(selectedScope);
+  await page.getByRole("button", { name: "Указать остаток", exact: true }).click();
+  await selectAnchorDate(page, 20);
+  await page.getByLabel("Остаток, ₽", { exact: true }).fill("0");
+  await page.getByLabel("Основание", { exact: true }).fill("Сверка на прошлую дату");
+  await page.getByRole("button", { name: "Сохранить остаток", exact: true }).click();
+  await expect(page.getByRole("button", { name: "Повторить отправку", exact: true })).toBeVisible();
+  await expect(page.getByLabel("Остаток, ₽", { exact: true })).toBeDisabled();
+  await page.getByRole("button", { name: "Повторить отправку", exact: true }).click();
+  await expect(page.getByText("Сохранён ручной остаток на 2026-10-20.", { exact: true })).toBeVisible();
+  expect(state.anchorPosts).toHaveLength(2);
+  expect(state.anchorPosts[1]).toEqual(state.anchorPosts[0]);
+  expect(state.anchorPosts[0]?.body).toEqual({
+    date: "2026-10-20",
+    balance: "0.00",
+    reason: "Сверка на прошлую дату",
+  });
+  await page.getByRole("button", { name: "Готово", exact: true }).click();
+  const selected = page.getByRole("region", { name: "Выбранный счёт: Основной счёт", exact: true });
+  await expect(selected).toContainText("−99 999 999 999 999 999,99");
+  expect(state.problems).toEqual([]);
+});
+
+for (const role of ["VIEWER", "ACCOUNTANT"]) {
+  test(`management respects ${role} scope and does not offer OWNER commands`, async ({ page }) => {
+    const state = await service(page, true, role);
+    await page.goto(selectedScope);
+    await expect(
+      page.getByRole("heading", { name: "Выбранный счёт: Основной счёт", exact: true }),
+    ).toBeVisible();
+    await expect(page.getByRole("button", { name: "Редактировать организацию", exact: true })).toHaveCount(0);
+    await expect(page.getByRole("button", { name: "Архивировать организацию", exact: true })).toHaveCount(0);
+    await expect(page.getByRole("button", { name: "Архивировать счёт", exact: true })).toHaveCount(0);
+    await expect(page.getByRole("button", { name: "Редактировать счёт", exact: true })).toHaveCount(
+      role === "ACCOUNTANT" ? 1 : 0,
+    );
+    await expect(page.getByRole("button", { name: "Указать остаток", exact: true })).toHaveCount(
+      role === "ACCOUNTANT" ? 1 : 0,
+    );
+    expect(state.problems).toEqual([]);
+  });
+}
+
+test("a write 403 refreshes company permissions and hides further write controls", async ({ page }) => {
+  const state = await service(page, true);
+  await page.goto(selectedScope);
+  await page.getByRole("button", { name: "Редактировать счёт", exact: true }).click();
+  await page.getByLabel("Название счёта", { exact: true }).fill("Не разрешено");
+  state.denyWrite = true;
+  await page.getByRole("button", { name: "Сохранить изменения", exact: true }).click();
+  await expect(page.getByRole("dialog")).not.toBeVisible();
+  await expect(page.getByRole("button", { name: "Редактировать счёт", exact: true })).toHaveCount(0);
+  await expect(page.getByRole("button", { name: "Указать остаток", exact: true })).toHaveCount(0);
+  expect(state.accountPuts).toHaveLength(1);
+});
+
+test("anchor form rejects a missing amount and future date before sending a command", async ({ page }) => {
+  await page.clock.setFixedTime(new Date(time));
+  const state = await service(page, true);
+  await page.goto(selectedScope);
+  await page.getByRole("button", { name: "Указать остаток", exact: true }).click();
+  await page.getByRole("button", { name: "Сохранить остаток", exact: true }).click();
+  await expect(page.getByLabel("Остаток, ₽", { exact: true })).toHaveAttribute("aria-invalid", "true");
+  expect(state.anchorPosts).toHaveLength(0);
+  await selectAnchorDate(page, 25);
+  await page.getByLabel("Остаток, ₽", { exact: true }).fill("12,34");
+  await page.getByLabel("Основание", { exact: true }).fill("Сверка");
+  await page.getByRole("button", { name: "Сохранить остаток", exact: true }).click();
+  await expect(page.getByText("Будущая дата остатка недопустима", { exact: true })).toBeVisible();
+  expect(state.anchorPosts).toHaveLength(0);
+  await selectAnchorDate(page);
+  await page.getByRole("button", { name: "Сохранить остаток", exact: true }).click();
+  await expect(page.getByText("Сохранён ручной остаток на 2026-10-24.", { exact: true })).toBeVisible();
+  expect(state.anchorPosts[0]?.body).toEqual({ date: "2026-10-24", balance: "12.34", reason: "Сверка" });
 });

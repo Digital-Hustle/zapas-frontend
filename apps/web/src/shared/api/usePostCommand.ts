@@ -57,5 +57,8 @@ export function usePostCommand<T, R>(
     uncertain,
     issue,
     retryLeft,
+    clearKnownError: () => {
+      if (!uncertain && !locked.current) mutation.reset();
+    },
   };
 }

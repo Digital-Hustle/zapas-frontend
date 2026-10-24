@@ -7,6 +7,7 @@ import { canWriteAccounts, useAccount, useAccounts, workspaceKeys, type Company 
 import { accessDenied } from "@/shared/api/problem.ts";
 import { CreateAccountForm } from "@/features/create-workspace";
 import { QueryIssue, Loading, Pagination } from "./WorkspaceParts.tsx";
+import { AccountActions } from "./WorkspaceActions.tsx";
 
 export function Accounts({
   company,
@@ -165,6 +166,13 @@ export function Accounts({
             {selected.data.archived && (
               <p className="text-muted-foreground mt-3">Счёт в архиве. Доступен просмотр.</p>
             )}
+            <AccountActions
+              key={selected.data.id}
+              company={company}
+              account={selected.data}
+              stale={stale || accounts.isError || selected.isError}
+              recovery={recovery}
+            />
           </section>
         )}
       {creating && writable && (
