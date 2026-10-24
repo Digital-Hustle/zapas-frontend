@@ -73,10 +73,27 @@ export function samplePayment() {
   };
 }
 
+export function sampleJob(overrides: Record<string, unknown> = {}) {
+  return {
+    id: other,
+    companyId,
+    accountId,
+    type: "FORECAST",
+    status: "SUCCEEDED",
+    progress: 100,
+    resultId: forecastFixture.id,
+    error: null,
+    createdAt: time,
+    ...overrides,
+  };
+}
 export async function service(page: Page, role = "OWNER") {
   const state = {
     requests: [] as { path: string; method: string; body: unknown; headers: Record<string, string> }[],
     planVersion: 1,
+    jobsStatus: 200,
+    jobsPaged: false,
+    savedJobs: [] as Record<string, unknown>[],
     plansStatus: 200,
     planLost: false,
     allocationConflict: false,
@@ -328,6 +345,10 @@ export async function service(page: Page, role = "OWNER") {
       }
       return json(job, 202);
     }
+    if (path.includes("/jobs/") && method === "GET") {
+      const saved = state.savedJobs.find((row) => path.endsWith(`/${String(row.id)}`));
+      if (saved) return json(saved);
+    }
     if (path.endsWith(`/jobs/${other}`) && method === "GET") {
       state.jobReads++;
       if (state.jobReads > 2 && !state.failedJob && state.jobType === "BACKTEST")
@@ -549,7 +570,20 @@ export async function service(page: Page, role = "OWNER") {
     if (path.endsWith(`/forecasts/${forecast.id}`)) return json(forecast);
     if (state.newForecast && path.endsWith(`/forecasts/${state.newForecast.id}`))
       return json(state.newForecast);
-    if (path.endsWith("/jobs")) return paged([]);
+    if (path.endsWith("/jobs")) {
+      if (state.jobsStatus !== 200) return problem(state.jobsStatus, "UNAVAILABLE");
+      if (!state.jobsPaged) return paged(state.savedJobs);
+      const number = Number(new URL(request.url()).searchParams.get("page") ?? 0);
+      return json({
+        items: state.savedJobs.slice(number, number + 1),
+        page: {
+          page: number,
+          size: 1,
+          total: state.savedJobs.length,
+          hasNext: number + 1 < state.savedJobs.length,
+        },
+      });
+    }
     return problem(404, "NOT_FOUND");
   });
   return Object.assign(state, { recurring, plans, payments, allocations, forecast, quality });
