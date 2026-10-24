@@ -77,6 +77,8 @@ async function service(page: Page, authenticated = false) {
       ["x-client", "x-user-id", "x-session-id", "x-company-id", "authorization"].some((key) => headers[key])
     )
       state.issues.push("unexpected identity header");
+    if (path === "/api/v1/orchestrator/companies" && method === "GET")
+      return json({ items: [], page: { page: 0, size: 10, total: 0, hasNext: false } });
     if (!path.startsWith("/api/v1/auth-profile/")) {
       state.issues.push(`unexpected namespace ${path}`);
       return problem("NOT_FOUND", 404);
