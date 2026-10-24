@@ -11,6 +11,7 @@ import {
   mapQuality,
   mapActual,
   mapRecurring,
+  mapOrigin,
   externalRegisterSchema,
 } from "./model.ts";
 
@@ -242,4 +243,15 @@ it("validates register replacement relations before a command is created", () =>
       items: [{ ...item, relation: "REPLACES_RECURRING" }],
     }).success,
   ).toBe(false);
+});
+
+it("does not label an unknown historical origin as a skipped evaluation", () => {
+  const origin = mapOrigin({
+    asOfDate: "2026-01-01",
+    status: "FUTURE",
+    reason: null,
+    evaluatedDays: 0,
+    maeBalance: null,
+  });
+  expect(origin).toHaveProperty("status", "UNKNOWN");
 });

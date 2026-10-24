@@ -35,7 +35,9 @@ export function QualityDetails({ data }: { data: QualityDetailsModel | null }) {
             ? "Проверка завершена"
             : data.status === "PARTIAL"
               ? "Частичная проверка"
-              : "Проверка не завершена"}
+              : data.status === "FAILED"
+                ? "Проверка не завершена"
+                : "Неизвестное состояние проверки"}
         </p>
         {data.stale && (
           <p className="text-warning-soft-foreground mt-2">
@@ -127,7 +129,12 @@ export function QualityDetails({ data }: { data: QualityDetailsModel | null }) {
             {data.origins.map((origin, i) => (
               <li key={i} className="border-border rounded-lg border p-4">
                 <h4 className="font-semibold">
-                  {formatDate(origin.date)} — {origin.evaluated ? "Проверен" : "Пропущен"}
+                  {formatDate(origin.date)} —{" "}
+                  {origin.status === "UNKNOWN"
+                    ? "Неизвестное состояние среза"
+                    : origin.evaluated
+                      ? "Проверен"
+                      : "Пропущен"}
                 </h4>
                 {origin.reason && <p className="text-muted-foreground mt-2">{origin.reason}</p>}
                 <p className="text-muted-foreground mt-2 text-sm">

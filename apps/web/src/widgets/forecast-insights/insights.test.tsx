@@ -77,3 +77,18 @@ describe("v1 risk and quality presentation", () => {
     expect(html).not.toContain("Точность:");
   });
 });
+
+it("keeps an unknown origin distinct from an explicit skipped origin", () => {
+  const html = text(
+    <QualityDetails
+      data={{
+        ...qualityExample,
+        origins: [
+          { date: "2026-01-01", evaluated: false, reason: null, days: 0, mae: null, status: "UNKNOWN" },
+        ],
+      }}
+    />,
+  );
+  expect(html).toContain("Неизвестное состояние среза");
+  expect(html).not.toContain("Пропущен</h4>");
+});

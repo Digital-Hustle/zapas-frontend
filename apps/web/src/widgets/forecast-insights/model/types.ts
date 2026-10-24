@@ -50,6 +50,7 @@ export interface QualityDetailsModel {
   origins: readonly {
     date: string;
     evaluated: boolean;
+    status?: "EVALUATED" | "SKIPPED" | "UNKNOWN";
     reason: string | null;
     days: number;
     mae: string | null;

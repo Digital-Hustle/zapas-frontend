@@ -94,6 +94,13 @@ export async function service(page: Page, role = "OWNER") {
     dashboardStatus: 200,
     emptyDashboard: false,
     forecastLost: false,
+    backtestLost: false,
+    backtestsStatus: 200,
+    backtestStatus: 200,
+    emptyBacktests: false,
+    originsPaged: false,
+    newBacktest: null as BacktestRs | null,
+    backtestCompleted: false,
     jobType: "DETECT_RECURRING" as JobRs["type"],
     newForecast: null as ForecastRs | null,
     forecastCompleted: false,
@@ -283,6 +290,15 @@ export async function service(page: Page, role = "OWNER") {
       error: null,
       createdAt: time,
     };
+    if (path.endsWith("/backtest-jobs")) {
+      state.jobType = "BACKTEST";
+      state.newBacktest = { ...quality, id: "00000000-0000-4000-8000-000000000009", jobId: other };
+      if (state.backtestLost) {
+        state.backtestLost = false;
+        return route.abort("failed");
+      }
+      return json({ ...job, type: "BACKTEST" }, 202);
+    }
     if (path.endsWith("/forecast-jobs")) {
       state.jobType = "FORECAST";
       state.newForecast = { ...forecast, id: "00000000-0000-4000-8000-000000000008", jobId: other };
@@ -314,6 +330,8 @@ export async function service(page: Page, role = "OWNER") {
     }
     if (path.endsWith(`/jobs/${other}`) && method === "GET") {
       state.jobReads++;
+      if (state.jobReads > 2 && !state.failedJob && state.jobType === "BACKTEST")
+        state.backtestCompleted = true;
       if (state.jobReads > 2 && !state.failedJob && state.jobType === "FORECAST")
         state.forecastCompleted = true;
       return json({
@@ -328,8 +346,12 @@ export async function service(page: Page, role = "OWNER") {
                 : "SUCCEEDED"
               : "RUNNING",
         resultId:
-          state.jobReads > 2 && !state.failedJob && state.jobType === "FORECAST"
-            ? (state.newForecast?.id ?? null)
+          state.jobReads > 2 && !state.failedJob
+            ? state.jobType === "FORECAST"
+              ? (state.newForecast?.id ?? null)
+              : state.jobType === "BACKTEST"
+                ? (state.newBacktest?.id ?? null)
+                : null
             : null,
         error: state.failedJob
           ? { code: "INSUFFICIENT_HISTORY", traceId: "trace", detail: "private-financial-body" }
@@ -469,9 +491,44 @@ export async function service(page: Page, role = "OWNER") {
       alert.version += 1;
       return json(alert);
     }
-    if (path.endsWith("/backtests") && method === "GET") return paged([quality]);
-    if (path.endsWith(`/backtests/${quality.id}`)) return json(quality);
-    if (path.endsWith("/origins")) return paged([]);
+    if (path.endsWith("/backtests") && method === "GET")
+      return state.backtestsStatus !== 200
+        ? problem(state.backtestsStatus, "UNAVAILABLE")
+        : paged(
+            state.emptyBacktests
+              ? []
+              : state.backtestCompleted && state.newBacktest
+                ? [state.newBacktest, quality]
+                : [quality],
+          );
+    if (path.endsWith(`/backtests/${quality.id}`))
+      return state.backtestStatus !== 200 ? problem(state.backtestStatus, "UNAVAILABLE") : json(quality);
+    if (state.newBacktest && path.endsWith(`/backtests/${state.newBacktest.id}`))
+      return json(state.newBacktest);
+    if (path.endsWith("/origins")) {
+      if (!state.originsPaged) return paged([]);
+      const number = Number(new URL(request.url()).searchParams.get("page") ?? 0);
+      const rows = [
+        {
+          asOfDate: "2026-06-01",
+          status: "EVALUATED",
+          reason: null,
+          evaluatedDays: 30,
+          maeBalance: "8000.50",
+        },
+        {
+          asOfDate: "2026-06-08",
+          status: "SKIPPED",
+          reason: "Неполная история",
+          evaluatedDays: 0,
+          maeBalance: null,
+        },
+      ];
+      return json({
+        items: rows.slice(number, number + 1),
+        page: { page: number, size: 1, total: 2, hasNext: number === 0 },
+      });
+    }
     if (path.endsWith("/members"))
       return paged([{ userId: other, role: "OWNER", joinedAt: time, version: 1 }]);
     if (path.endsWith("/data-quality"))
@@ -495,5 +552,5 @@ export async function service(page: Page, role = "OWNER") {
     if (path.endsWith("/jobs")) return paged([]);
     return problem(404, "NOT_FOUND");
   });
-  return Object.assign(state, { recurring, plans, payments, allocations, forecast });
+  return Object.assign(state, { recurring, plans, payments, allocations, forecast, quality });
 }
