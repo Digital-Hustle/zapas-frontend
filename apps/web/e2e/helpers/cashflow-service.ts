@@ -91,6 +91,10 @@ export async function service(page: Page, role = "OWNER") {
   const state = {
     requests: [] as { path: string; method: string; body: unknown; headers: Record<string, string> }[],
     planVersion: 1,
+    alertsStatus: 200,
+    alertsPaged: false,
+    alertConflict: false,
+    alertLost: false,
     jobsStatus: 200,
     jobsPaged: false,
     savedJobs: [] as Record<string, unknown>[],
@@ -165,15 +169,17 @@ export async function service(page: Page, role = "OWNER") {
     description: "Проверьте предстоящие платежи",
     forecastId: forecast.id,
     gapId: forecast.gaps[0]?.id ?? null,
-    expectedPaymentId: null,
+    expectedPaymentId: null as string | null,
     date: "2026-10-29",
     shortfall: "50000.00",
-    probability: null,
+    probability: null as number | null,
     active: true,
     acknowledgedAt: null as string | null,
     version: 1,
     createdAt: time,
   };
+  const alerts = [alert];
+  const alertReplies = new Map<string, typeof alert>();
   await page.route("**/api/v1/**", async (route) => {
     const request = route.request();
     const path = new URL(request.url()).pathname;
@@ -506,10 +512,34 @@ export async function service(page: Page, role = "OWNER") {
       Object.assign(settings, body, { version: settings.version + 1 });
       return json(settings);
     }
-    if (path.endsWith("/alerts") && method === "GET") return paged([alert]);
+    if (path.endsWith("/alerts") && method === "GET") {
+      if (state.alertsStatus !== 200) return problem(state.alertsStatus, "UNAVAILABLE");
+      const params = new URL(request.url()).searchParams;
+      const filtered = alerts.filter(
+        (item) => !params.has("active") || String(item.active) === params.get("active"),
+      );
+      if (!state.alertsPaged) return paged(filtered);
+      const number = Number(params.get("page") ?? 0);
+      return json({
+        items: filtered.slice(number, number + 1),
+        page: { page: number, size: 1, total: filtered.length, hasNext: number + 1 < filtered.length },
+      });
+    }
     if (path.endsWith("/acknowledge")) {
+      const replay = alertReplies.get(headers["idempotency-key"] ?? "");
+      if (replay) return json(replay);
+      if (state.alertConflict) {
+        state.alertConflict = false;
+        alert.version += 1;
+        return problem(409, "VERSION_CONFLICT");
+      }
       alert.acknowledgedAt = time;
       alert.version += 1;
+      alertReplies.set(headers["idempotency-key"] ?? "", { ...alert });
+      if (state.alertLost) {
+        state.alertLost = false;
+        return route.abort("failed");
+      }
       return json(alert);
     }
     if (path.endsWith("/backtests") && method === "GET")
@@ -586,5 +616,5 @@ export async function service(page: Page, role = "OWNER") {
     }
     return problem(404, "NOT_FOUND");
   });
-  return Object.assign(state, { recurring, plans, payments, allocations, forecast, quality });
+  return Object.assign(state, { recurring, plans, payments, allocations, forecast, quality, alert, alerts });
 }
