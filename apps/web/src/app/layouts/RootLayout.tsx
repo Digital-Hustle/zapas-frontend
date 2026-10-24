@@ -6,6 +6,7 @@ import { useQueryClient } from "@tanstack/react-query";
 import { resetPrivateSession, usePrivateQueries } from "@/entities/auth-profile";
 import { pageSwap } from "@zapas/tokens/motion";
 import { PreviewNotice } from "../preview/PreviewNotice.tsx";
+import { PendingCommandsGuard } from "../navigation/PendingCommandsGuard.tsx";
 import { PageNavigation } from "../navigation/PageNavigation.tsx";
 
 /** Уходящая страница держит последний кадр, пока проигрывается выход (иначе outlet сразу покажет новую). */
@@ -52,6 +53,7 @@ export function RootLayout() {
     <>
       {import.meta.env.VITE_PREVIEW_MOCKS === "1" && <PreviewNotice />}
       <PageNavigation />
+      <PendingCommandsGuard />
       <AnimatePresence
         mode="wait"
         custom={dir}
