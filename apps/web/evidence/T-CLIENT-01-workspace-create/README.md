@@ -1,6 +1,7 @@
 # Организация / счёт — выбор и создание
 
-Base: Auth/Profile #12@8723552 поверх frontend main 8535560, hub abe85d7.
+Base: Auth/Profile #12@6e7620f (интеграция F2 #17), frontend main 0d2b024, hub 760917f.
+Повторная проверка после интеграции: 126 Vitest +22 tooling и все54 Playwright passed.
 
 - 18 PNG: создание организации, создание счёта, выбранный счёт на
   360/768/1440 px × light/dark. Визуально проверены mobile light и desktop dark.
@@ -14,11 +15,10 @@ Base: Auth/Profile #12@8723552 поверх frontend main 8535560, hub abe85d7.
   429 после потери не меняет ключ, deadline соблюдается. При явном уходе к списку
   требуется подтверждение; отмена подтверждения сохраняет возможность replay.
 - node tools/check.mjs frontend contracts tooling security прошёл:
-  118 Vitest (tokens4 + UI49 + API16 + charts6 + web43), 22 tooling,
+  126 Vitest (tokens4 + UI57 + API16 + charts6 + web43), 22 tooling,
   lint/types/FSD/tokens/contracts/production build/guard. Локального gitleaks нет;
   GitHub security обязателен отдельно.
 
 Текущая часть — выбор/создание, не законченный финансовый dashboard.
 Следом редактирование/If-Match/conflict, архивирование и подтверждённый остаток.
-Общий слой F2 не изменён. PR #17 F2 ещё отдельно предлагает новый MoneyInput/OTP;
-этот evidence получен на текущем main с действующим публичным API компонентов.
+Общий слой F2 не изменён. F2 #17 с MoneyInput/OTP подхвачен после merge; evidence обновлён на этих компонентах.
