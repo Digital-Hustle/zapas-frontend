@@ -1,35 +1,30 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { http } from "@zapas/api";
-import { sessionKeys } from "@/entities/session";
+import { AuthProblem, resetPrivateSession, useAuthPort } from "@/entities/auth-profile";
 
-// После генерации клиента заменить на useRequestLoginCode / useVerifyLoginCode из @zapas/api/auth.
-export interface CodeRs {
-  maskedEmail: string;
-  expiresInSec: number;
-  resendAfterSec: number;
-  codeLength: number;
-  demoCode?: string;
+export function useRequestCode() {
+  const port = useAuthPort();
+  return useMutation({
+    mutationKey: ["auth-profile", "code"],
+    retry: false,
+    mutationFn: (email: string) => {
+      if (!port) throw new AuthProblem({ kind: "unavailable", message: "Сервис входа пока недоступен." });
+      return port.requestChallenge(email);
+    },
+  });
 }
 
-export const useRequestCode = () =>
-  useMutation({
-    mutationFn: (email: string) =>
-      http<CodeRs>("/api/v1/auth/code", {
-        method: "POST",
-        body: JSON.stringify({ email, client: "WEB" }),
-        silent: true,
-      }),
-  });
-
-export const useVerifyCode = () => {
-  const qc = useQueryClient();
+export function useVerifyCode() {
+  const port = useAuthPort();
+  const client = useQueryClient();
   return useMutation({
-    mutationFn: (v: { email: string; code: string }) =>
-      http<{ isNewUser: boolean }>("/api/v1/auth/verify", {
-        method: "POST",
-        body: JSON.stringify({ ...v, client: "WEB" }),
-        silent: true,
-      }),
-    onSuccess: () => qc.invalidateQueries({ queryKey: sessionKeys.me }),
+    mutationKey: ["auth-profile", "verify"],
+    retry: false,
+    mutationFn: ({ challengeId, code }: { challengeId: string; code: string }) => {
+      if (!port) throw new AuthProblem({ kind: "unavailable", message: "Сервис входа пока недоступен." });
+      return port.verifyChallenge(challengeId, code);
+    },
+    onSuccess: async ({ profile }) => {
+      await resetPrivateSession(client, profile);
+    },
   });
-};
+}

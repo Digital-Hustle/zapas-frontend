@@ -5,6 +5,6 @@ export class AuthProblem extends Error {
   }
 }
 export function authIssue(error: unknown): AuthIssue {
-  if (error instanceof AuthProblem) return error.issue;
+  if (error instanceof AuthProblem && error.issue.kind !== "unknown") return error.issue;
   return { kind: "unknown", message: "Сервис временно недоступен. Попробуйте ещё раз." };
 }

@@ -22,10 +22,12 @@ export interface BrowserSession {
 export type AuthFailureKind =
   | "code-invalid"
   | "code-expired"
+  | "code-attempts-exceeded"
   | "rate-limit"
   | "offline"
   | "unavailable"
   | "session-expired"
+  | "session-not-found"
   | "profile-conflict"
   | "validation"
   | "unknown";

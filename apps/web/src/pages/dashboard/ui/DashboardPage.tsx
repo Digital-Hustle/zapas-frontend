@@ -1,23 +1,22 @@
-import { Skeleton } from "@zapas/ui";
-import { useSession } from "@/entities/session";
+import { Link } from "react-router";
+import { buttonVariants } from "@zapas/ui";
+import { useProfile } from "@/entities/auth-profile";
 import { Logo } from "@/shared/ui";
 
-// F1: FR-UI-01/02 — карточка статуса, ForecastChart, предупреждения, ближайшие платежи.
 export function DashboardPage() {
-  const { data } = useSession();
-  const company = data?.companies[0]?.company;
+  const { data } = useProfile();
   return (
-    <div className="mx-auto flex max-w-content flex-col gap-6 px-6 py-8">
+    <main className="max-w-content mx-auto flex flex-col gap-6 px-6 py-8">
       <Logo to="/app" />
       <h1 className="text-2xl font-semibold">
-        {company?.name ?? "Добро пожаловать"}
+        {data?.displayName ? `Здравствуйте, ${data.displayName}` : "Добро пожаловать"}
       </h1>
-      <div className="grid gap-4 lg:grid-cols-3">
-        <Skeleton className="h-36 rounded-xl" />
-        <Skeleton className="h-36 rounded-xl" />
-        <Skeleton className="h-36 rounded-xl" />
-      </div>
-      <Skeleton className="h-80 rounded-xl" />
-    </div>
+      <p className="text-muted-foreground">
+        Данные организаций пока недоступны. Профиль и сессии доступны отдельно.
+      </p>
+      <Link to="/app/profile" className={buttonVariants({ variant: "secondary", className: "w-fit" })}>
+        Профиль и сессии
+      </Link>
+    </main>
   );
 }

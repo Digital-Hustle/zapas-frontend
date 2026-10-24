@@ -20,6 +20,7 @@ it("does not expose unrecognized exception messages or object fields", () => {
     new Error("private-server-details"),
     { kind: "offline", message: "private-server-details" },
     null,
+    new AuthProblem({ kind: "unknown", message: "private-server-details" }),
   ]) {
     const issue = authIssue(error);
     expect(issue.kind).toBe("unknown");
