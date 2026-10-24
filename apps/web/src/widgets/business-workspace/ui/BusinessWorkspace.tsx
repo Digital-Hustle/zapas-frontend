@@ -8,6 +8,7 @@ import { accessDenied } from "@/shared/api/problem.ts";
 import { Loading, QueryIssue } from "@/shared/ui/BusinessData.tsx";
 import { Logo } from "@/shared/ui";
 import { RecoveryAction } from "./RecoveryAction.tsx";
+import { useCommandLock } from "@/shared/lib/pending-commands.ts";
 import type { ReactNode } from "react";
 
 export interface BusinessScope {
@@ -16,11 +17,13 @@ export interface BusinessScope {
   active: boolean;
   writable: boolean;
   busy: boolean;
+  locked: boolean;
   recovery: ReactNode;
 }
 const sections = [
   ["imports", "Импорт CSV"],
   ["payments", "Операции"],
+  ["recurring", "Регулярности"],
 ] as const;
 
 export function WorkspaceNavigation({ companyId, accountId }: { companyId: string; accountId: string }) {
@@ -63,6 +66,7 @@ export function BusinessWorkspace({
   const company = useCompany(companyId, privateQueries && valid);
   const account = useAccount(companyId ?? "", accountId, privateQueries && valid);
   const busy = useIsMutating() > 0;
+  const { locked } = useCommandLock();
   const recovery = <RecoveryAction />;
   const visible =
     Boolean(company.data && account.data) &&
@@ -128,6 +132,7 @@ export function BusinessWorkspace({
                 !account.data.archived &&
                 canWriteAccounts(company.data),
               busy,
+              locked,
               recovery,
             })}
             <Link to={companyPath(company.data.id, account.data.id)} className="text-link text-sm underline">

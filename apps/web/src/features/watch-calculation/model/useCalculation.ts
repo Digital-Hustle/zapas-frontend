@@ -1,11 +1,15 @@
 import { useQuery } from "@tanstack/react-query";
 import { pollingDelay } from "./polling.ts";
-import type { CalculationScope, ReadCalculation } from "./types.ts";
+import type { Calculation, CalculationScope } from "./types.ts";
 
 export const calculationKey = ({ companyId, accountId, jobId }: CalculationScope) =>
   ["calculation", companyId, accountId, jobId] as const;
 
-export function useCalculation(scope: CalculationScope, read: ReadCalculation, enabled = true) {
+export function useCalculation<T extends Calculation>(
+  scope: CalculationScope,
+  read: (scope: CalculationScope, signal: AbortSignal) => Promise<T>,
+  enabled = true,
+) {
   return useQuery({
     queryKey: calculationKey(scope),
     queryFn: ({ signal }) => read(scope, signal),

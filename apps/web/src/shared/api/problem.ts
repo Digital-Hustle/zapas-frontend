@@ -43,6 +43,8 @@ const fieldMessages: Readonly<Record<string, string>> = {
   balance: "Проверьте сумму остатка: до 17 цифр и два знака после запятой.",
   reason: "Укажите основание: от 1 до 500 символов",
   categoryCode: "Выберите доступную категорию",
+  amount: "Введите сумму больше нуля, до 17 цифр и два знака после запятой",
+  asOfDate: "Проверьте дату расчёта",
 };
 export function mapBusinessFailure(error: unknown): BusinessIssue {
   if (error instanceof z.ZodError)
