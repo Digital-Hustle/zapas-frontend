@@ -1,0 +1,9 @@
+{
+  "apiVersion": "1.0.0-draft",
+  "currency": "RUB",
+  "forecastHorizons": [30],
+  "riskMethods": ["HISTORICAL_TRAJECTORY_BOOTSTRAP"],
+  "maxCsvBytes": 20971520,
+  "maxImportRows": 50000,
+  "maxPageSize": 200
+}

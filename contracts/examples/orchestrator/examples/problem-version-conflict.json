@@ -1,0 +1,11 @@
+{
+  "type": "https://example.invalid/problems/version-conflict",
+  "title": "VERSION_CONFLICT",
+  "status": 409,
+  "code": "VERSION_CONFLICT",
+  "detail": "План изменён другим пользователем. Обновите данные и повторите действие.",
+  "traceId": "demo-trace-001",
+  "errors": [],
+  "retryAfterSec": null,
+  "resourceId": "00000000-0000-4000-8000-000000000005"
+}
