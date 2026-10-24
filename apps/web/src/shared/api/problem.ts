@@ -42,6 +42,7 @@ const fieldMessages: Readonly<Record<string, string>> = {
   date: "Проверьте дату. Будущая дата остатка недопустима.",
   balance: "Проверьте сумму остатка: до 17 цифр и два знака после запятой.",
   reason: "Укажите основание: от 1 до 500 символов",
+  categoryCode: "Выберите доступную категорию",
 };
 export function mapBusinessFailure(error: unknown): BusinessIssue {
   if (error instanceof z.ZodError)

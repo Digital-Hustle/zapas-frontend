@@ -18,7 +18,8 @@ import {
 } from "@/entities/workspace";
 import type { BusinessIssue } from "@/shared/api/problem.ts";
 import { businessIssue } from "@/shared/api/problem.ts";
-import { useVersionedEdit } from "../model/useVersionedEdit.ts";
+import { useVersionedEdit } from "@/shared/api/useVersionedEdit.ts";
+import { usePermissionRefresh } from "../model/usePermissionRefresh.ts";
 
 function companyDraft(company: Company): Partial<CompanyDraft> {
   return {
@@ -121,6 +122,7 @@ export function EditCompanyForm({
       onClose();
     },
   });
+  usePermissionRefresh(editor.issue);
   const busy = useIsMutating() > 0;
   const disabled = busy || editor.blocked || !privateQueries;
   const error = (key: keyof CompanyDraft) =>
@@ -272,6 +274,7 @@ export function EditAccountForm({
       onClose();
     },
   });
+  usePermissionRefresh(editor.issue);
   const busy = useIsMutating() > 0;
   const disabled = busy || editor.blocked || !privateQueries;
   const error = (key: keyof AccountDraft) =>
