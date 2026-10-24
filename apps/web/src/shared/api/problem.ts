@@ -10,6 +10,7 @@ export interface BusinessIssue {
     | "forbidden"
     | "not-found"
     | "conflict"
+    | "version-conflict"
     | "validation"
     | "rate-limit"
     | "unknown";
@@ -38,6 +39,9 @@ const fieldMessages: Readonly<Record<string, string>> = {
   bankName: "Название банка: до 200 символов",
   accountNumber: "Номер счёта: 20 цифр",
   externalCompanyId: "ID компании в выписке: до 100 символов",
+  date: "Проверьте дату. Будущая дата остатка недопустима.",
+  balance: "Проверьте сумму остатка: до 17 цифр и два знака после запятой.",
+  reason: "Укажите основание: от 1 до 500 символов",
 };
 export function mapBusinessFailure(error: unknown): BusinessIssue {
   if (error instanceof z.ZodError)
@@ -84,7 +88,7 @@ export function mapBusinessFailure(error: unknown): BusinessIssue {
     };
   if (error.status === 409)
     return {
-      kind: "conflict",
+      kind: error.code === "VERSION_CONFLICT" ? "version-conflict" : "conflict",
       message: "Данные изменились или команда уже существует. Перечитайте данные перед новым действием.",
       ambiguous: false,
     };

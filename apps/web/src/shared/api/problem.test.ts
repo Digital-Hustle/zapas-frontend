@@ -34,3 +34,9 @@ it("never displays server details or unknown fields in business forms", () => {
   expect(issue.fields).toEqual({ accountNumber: "Номер счёта: 20 цифр" });
   expect(JSON.stringify(issue)).not.toContain("private");
 });
+
+it("distinguishes a stale resource version from other conflicts", () => {
+  expect(
+    mapBusinessFailure(new ApiError({ status: 409, code: "VERSION_CONFLICT", detail: "private" })).kind,
+  ).toBe("version-conflict");
+});

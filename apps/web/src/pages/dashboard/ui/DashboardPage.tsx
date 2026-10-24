@@ -10,6 +10,7 @@ import { CreateCompanyForm } from "@/features/create-workspace";
 import { accessDenied } from "@/shared/api/problem.ts";
 import { Logo } from "@/shared/ui";
 import { Accounts } from "./Accounts.tsx";
+import { CompanyActions } from "./WorkspaceActions.tsx";
 import { QueryIssue, Loading, Pagination } from "./WorkspaceParts.tsx";
 
 function scopeId(value: string | null) {
@@ -173,14 +174,17 @@ export function DashboardPage() {
         {selected.data &&
           !(companies.isError && accessDenied(companies.error)) &&
           !(selected.isError && accessDenied(selected.error)) && (
-            <Accounts
-              key={selected.data.id}
-              company={selected.data}
-              accountId={accountId}
-              stale={selected.isError}
-              recovery={recoveryAction}
-              onAccount={(id) => setParams({ company: selected.data.id, account: id })}
-            />
+            <div className="space-y-6" key={selected.data.id}>
+              <CompanyActions company={selected.data} stale={selected.isError} recovery={recoveryAction} />
+              <Accounts
+                key={selected.data.id}
+                company={selected.data}
+                accountId={accountId}
+                stale={selected.isError}
+                recovery={recoveryAction}
+                onAccount={(id) => setParams({ company: selected.data.id, account: id })}
+              />
+            </div>
           )}
         {!companyId && companies.data && companies.data.items.length > 0 && (
           <p role="status" className="text-muted-foreground">
