@@ -1,5 +1,9 @@
 {
   "hub": "Digital-Hustle/zapas",
-  "ref": "7d6b86cb849a1adc816d9ada0af5c4eeb9bcc16d",
-  "contractsManifestSha256": "89a1d3183b3d9348310cd62dfde90151fb2ca0dcf0a088f3515e41b2da43d61f"
+  "ref": "abe85d7503b0cb592102c8729dd321b7081f79c4",
+  "contractsManifestSha256": "f0fe3be0f3579b522d85075bbce9ba496206e5c9f6ef06afbe50eb6db54845f2",
+  "auxiliaryFiles": {
+    "contracts/redocly.yaml": "a694dfdad4b366ea46995a2b9ed538350facd85b38756021fe56fc77eb81550d",
+    "contracts/events/README.md": "0cf9981b47be53c1209e819e38439a11a20d5e813d3c3791ac78577bfe996dbb"
+  }
 }
