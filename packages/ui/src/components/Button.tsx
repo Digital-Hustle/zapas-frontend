@@ -90,13 +90,7 @@ export const Button = forwardRef<HTMLButtonElement, ButtonProps>(function Button
       {...(loading || disabled ? {} : press)}
       {...props}
     >
-      <motion.span
-        className="inline-flex items-center gap-2"
-        animate={{ opacity: loading ? 0 : 1 }}
-        transition={tween.fast}
-      >
-        {children}
-      </motion.span>
+      <span className={cn("inline-flex items-center gap-2", loading && "opacity-0")}>{children}</span>
       {loading && (
         <motion.span
           className="absolute inset-0 flex items-center justify-center"

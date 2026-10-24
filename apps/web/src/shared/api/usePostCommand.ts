@@ -56,6 +56,7 @@ export function usePostCommand<T, R>(
     pending: mutation.isPending,
     uncertain,
     issue,
+    error: mutation.isError ? mutation.error : null,
     retryLeft,
     clearKnownError: () => {
       if (!uncertain && !locked.current) mutation.reset();

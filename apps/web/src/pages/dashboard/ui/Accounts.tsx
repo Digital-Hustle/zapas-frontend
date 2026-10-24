@@ -1,7 +1,8 @@
 import { roleName } from "./labels.ts";
+import { Link } from "react-router";
 import { useState, type ReactNode } from "react";
 import { useIsMutating, useQueryClient } from "@tanstack/react-query";
-import { Amount, Badge, Button, EmptyState } from "@zapas/ui";
+import { Amount, Badge, Button, EmptyState, buttonVariants } from "@zapas/ui";
 import { usePrivateQueries } from "@/entities/auth-profile";
 import { canWriteAccounts, useAccount, useAccounts, workspaceKeys, type Company } from "@/entities/workspace";
 import { accessDenied } from "@/shared/api/problem.ts";
@@ -173,6 +174,12 @@ export function Accounts({
               stale={stale || accounts.isError || selected.isError}
               recovery={recovery}
             />
+            <Link
+              to={`/app/imports?company=${company.id}&account=${selected.data.id}`}
+              className={buttonVariants({ variant: "secondary", size: "sm", className: "mt-4 w-fit" })}
+            >
+              История и импорт CSV
+            </Link>
           </section>
         )}
       {creating && writable && (
