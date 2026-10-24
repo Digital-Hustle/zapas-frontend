@@ -140,6 +140,13 @@ for (const width of [360, 768, 1440])
         const state = await service(page);
         state.originsPaged = true;
         state.quality.status = "PARTIAL";
+        state.quality.firstOrigin = "2026-06-01";
+        state.quality.lastOrigin = "2026-06-08";
+        state.quality.evaluatedOrigins = 1;
+        state.quality.skippedOrigins = 1;
+        state.quality.evaluatedDays = 30;
+        state.quality.maeBalance = "8000.50";
+        state.quality.rmseBalance = "9000.00";
         await page.goto(url("quality"));
         await page.getByRole("button", { name: "Открыть проверку", exact: true }).focus();
         await page.keyboard.press("Enter");
