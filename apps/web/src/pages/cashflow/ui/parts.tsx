@@ -1,3 +1,4 @@
+import { statusNames } from "../model/labels.ts";
 import { useEffect, useRef, type ReactNode } from "react";
 import { Link } from "react-router";
 import { Amount, Badge, Button, EmptyState, buttonVariants } from "@zapas/ui";
@@ -59,14 +60,7 @@ export function MoneyMetric({ label, value }: { label: string; value: string | n
     </div>
   );
 }
-const statusNames: Record<string, string> = {
-  QUEUED: "В очереди",
-  RUNNING: "Выполняется",
-  SUCCEEDED: "Завершён",
-  FAILED: "Ошибка расчёта",
-  CANCELLED: "Отменён",
-  UNKNOWN: "Неизвестное состояние",
-};
+
 export function JobStatus({
   scope,
   initial,

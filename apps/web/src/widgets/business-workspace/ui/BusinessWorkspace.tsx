@@ -21,6 +21,7 @@ export interface BusinessScope {
   recovery: ReactNode;
 }
 const sections = [
+  ["overview", "Обзор и прогноз"],
   ["imports", "Импорт CSV"],
   ["payments", "Операции"],
   ["recurring", "Регулярности"],
