@@ -5,6 +5,7 @@ import { Button, DatePicker, Field, Select } from "../src/index.ts";
 import "./styles.css";
 import { SelectionExample } from "./SelectionExample.tsx";
 import { ScenarioExample } from "./ScenarioExample.tsx";
+import { FoundationExample } from "./FoundationExample.tsx";
 
 const options = [
   { value: "rent", label: "Аренда" },
@@ -51,6 +52,7 @@ function Controls() {
             </section>
             <SelectionExample />
             <ScenarioExample />
+            <FoundationExample />
             <section
               aria-label="Состояния"
               className="border-border bg-card flex flex-col gap-4 rounded-xl border p-4 md:p-6"

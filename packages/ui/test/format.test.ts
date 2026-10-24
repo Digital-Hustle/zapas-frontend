@@ -1,10 +1,5 @@
 import { describe, expect, it } from "vitest";
-import {
-  formatMoney,
-  formatMoneyCompact,
-  parseMoneyInput,
-  plural,
-} from "../src/lib/format.ts";
+import { formatMoney, formatMoneyCompact, parseMoneyInput, plural } from "../src/lib/format.ts";
 
 const nbsp = (s: string) => s.replace(/[\u00a0\u202f]/g, " ");
 
@@ -17,6 +12,15 @@ describe("format", () => {
 
   it("компактный формат", () => {
     expect(nbsp(formatMoneyCompact("184000.00"))).toBe("184 тыс. ₽");
+  });
+
+  it("сохраняет точные копейки и округляет большие строки без Number", () => {
+    expect(nbsp(formatMoney("99999999999999999.99", { kopecks: true }))).toBe("99 999 999 999 999 999,99 ₽");
+    expect(nbsp(formatMoney("99999999999999999.99"))).toBe("100 000 000 000 000 000 ₽");
+    expect(nbsp(formatMoney("-0.01", { kopecks: true }))).toBe("−0,01 ₽");
+    expect(nbsp(formatMoney("-0.00", { signed: true }))).toBe("0 ₽");
+    expect(nbsp(formatMoneyCompact("999950.00"))).toBe("1 млн ₽");
+    expect(formatMoney("NaN")).toBe("Нет данных");
   });
 
   it("парсит ввод суммы", () => {

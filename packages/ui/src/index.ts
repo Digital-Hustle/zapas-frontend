@@ -5,6 +5,18 @@ export { useMediaQuery } from "./lib/useMediaQuery.ts";
 
 export { Button, buttonVariants, type ButtonProps } from "./components/Button.tsx";
 export { Input, Field, type InputProps } from "./components/Input.tsx";
+export { Textarea, type TextareaProps } from "./components/Textarea.tsx";
+export { FileDrop, type FileDropProps } from "./components/FileDrop.tsx";
+export { Amount, type AmountProps } from "./components/Amount.tsx";
+export {
+  Badge,
+  StatusDot,
+  RiskBadge,
+  EmptyState,
+  ErrorState,
+  type StatusTone,
+} from "./components/States.tsx";
+export { Stepper, Progress, type Step } from "./components/Progress.tsx";
 export { MoneyInput, type MoneyInputProps } from "./components/MoneyInput.tsx";
 export { OtpInput, type OtpInputProps } from "./components/OtpInput.tsx";
 export { Select, type SelectProps, type SelectOption } from "./components/Select.tsx";
@@ -22,4 +34,4 @@ export { confirmDialog, ConfirmHost } from "./feedback/confirm.tsx";
 
 // Следующие компоненты — T-F2-05 (см. docs/DESIGN.md §5): Combobox, DateRangePicker,
 // Tooltip, Popover, DropdownMenu, Table, VirtualTable, EmptyState, ErrorState,
-// Badge, RiskBadge, Stepper, Progress, CommandPalette, FileDrop, ScrollArea, NumberFlow-обёртка Amount.
+// CommandPalette, ScrollArea.

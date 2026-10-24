@@ -5,6 +5,7 @@ import { resolve, join } from "node:path";
 import process from "node:process";
 import { checkSelectionControls } from "./lib/check-selection-controls.mjs";
 import { checkSlidersTabs } from "./lib/check-sliders-tabs.mjs";
+import { checkFoundations } from "./lib/check-foundations.mjs";
 const previewUrl = process.env.UI_PREVIEW_URL ?? "http://127.0.0.1:5174/";
 const workspace = createRequire(new URL("../apps/web/package.json", import.meta.url));
 const { chromium, expect } = workspace("@playwright/test");
@@ -29,6 +30,7 @@ try {
         if (dark) await page.getByRole("button", { name: "Тёмная тема", exact: true }).click();
         await checkSelectionControls(page, expect);
         await checkSlidersTabs(page, expect);
+        await checkFoundations(page, expect);
         await page.evaluate(() =>
           Promise.all(document.getAnimations().map((animation) => animation.finished.catch(() => {}))),
         );
